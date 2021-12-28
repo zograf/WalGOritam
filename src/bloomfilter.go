@@ -95,8 +95,8 @@ func decodeBloomFilter(path string) *BloomFilter {
 	return &bf
 }
 
-func main() {
-	/* Testing
+/*func main() {
+	Testing
 	gob.Register(BloomFilter{})
 	bf := newBloomFilter(10, 0.1)
 	bf.add("uros")
@@ -108,7 +108,6 @@ func main() {
 	fmt.Println(bfDecoded)
 	fmt.Println(bfDecoded.isInBloomFilter("uros"))
 	fmt.Println(bfDecoded.isInBloomFilter("lazar"))
-	*/
 }
 
 func check(e error) {
@@ -116,3 +115,4 @@ func check(e error) {
 		panic(e)
 	}
 }
+*/
