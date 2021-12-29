@@ -27,7 +27,7 @@ func newHLL(p uint8) *HLL {
 	hll := HLL{}
 	hll.P = p
 	hll.M = uint64(math.Pow(2, float64(p)))
-	hll.hashFunction = CreateHashFunction()
+	hll.hashFunction = hllCreateHashFunction()
 	hll.Registers = make([]uint8, hll.M)
 	return &hll
 }
@@ -42,7 +42,7 @@ func (hll *HLL) emptyCount() int {
 	return sum
 }
 
-func CreateHashFunction() hash.Hash32 {
+func hllCreateHashFunction() hash.Hash32 {
 	seed := time.Now().Unix()
 	hashFunction := murmur3.New32WithSeed(uint32(seed))
 	return hashFunction
@@ -87,7 +87,7 @@ func decodeHLL(path string) *HLL {
 	var hll HLL
 	err = decoder.Decode(&hll)
 	check(err)
-	hll.hashFunction = CreateHashFunction()
+	hll.hashFunction = hllCreateHashFunction()
 	file.Close()
 	return &hll
 }

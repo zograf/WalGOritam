@@ -11,15 +11,15 @@ import (
 )
 
 // Helper functions
-func CalculateM(expectedElements int, falsePositiveRate float64) uint32 {
+func bloomFilterCalculateM(expectedElements int, falsePositiveRate float64) uint32 {
 	return uint32(math.Ceil(float64(expectedElements) * math.Abs(math.Log(falsePositiveRate)) / math.Pow(math.Log(2), float64(2))))
 }
 
-func CalculateK(expectedElements int, m uint32) uint32 {
+func bloomFilterCalculateK(expectedElements int, m uint32) uint32 {
 	return uint32(math.Ceil((float64(m) / float64(expectedElements)) * math.Log(2)))
 }
 
-func CreateHashFunctions(k, seed uint32) []hash.Hash32 {
+func bloomFilterCreateHashFunctions(k, seed uint32) []hash.Hash32 {
 	h := []hash.Hash32{}
 	for i := uint32(0); i < k; i++ {
 		h = append(h, murmur3.New32WithSeed(uint32(seed+i)))
@@ -38,9 +38,9 @@ type BloomFilter struct {
 func newBloomFilter(expectedElements int, falsePositiveRate float64) *BloomFilter {
 	bfInstance := BloomFilter{}
 	bfInstance.Seed = uint32(time.Now().Unix())
-	bfInstance.M = CalculateM(expectedElements, falsePositiveRate)
-	bfInstance.K = CalculateK(expectedElements, bfInstance.M)
-	bfInstance.hashArray = CreateHashFunctions(bfInstance.K, bfInstance.Seed)
+	bfInstance.M = bloomFilterCalculateM(expectedElements, falsePositiveRate)
+	bfInstance.K = bloomFilterCalculateK(expectedElements, bfInstance.M)
+	bfInstance.hashArray = bloomFilterCreateHashFunctions(bfInstance.K, bfInstance.Seed)
 	bfInstance.Memory = make([]byte, bfInstance.M)
 	return &bfInstance
 }
@@ -90,7 +90,7 @@ func decodeBloomFilter(path string) *BloomFilter {
 	decoder := gob.NewDecoder(file)
 	var bf BloomFilter
 	err = decoder.Decode(&bf)
-	bf.hashArray = CreateHashFunctions(bf.K, bf.Seed)
+	bf.hashArray = bloomFilterCreateHashFunctions(bf.K, bf.Seed)
 	file.Close()
 	return &bf
 }
