@@ -1,8 +1,8 @@
-package src
+package SkipList
 
 import (
 	"fmt"
-	"math"
+	"strings"
 	"time"
 )
 
@@ -13,15 +13,15 @@ import(
 type SkipList struct {
 	maxHeight int
 	height    int
-	size      int
-	head      *SkipListNode
-	tail      *SkipListNode
+	Size      int
+	Head *SkipListNode
+	Tail *SkipListNode
 }
 
 type SkipListNode struct {
-	key       int64
-	value     []byte
-	next      []*SkipListNode
+	Key   string
+	Value []byte
+	next  []*SkipListNode
 }
 
 func (s *SkipList) roll() int {
@@ -35,51 +35,81 @@ func (s *SkipList) roll() int {
 	return level
 }
 
-func (sl *SkipList) print() {
+func (sl *SkipList) Print() {
 	for i:= sl.height; i >= 0; i--{
-		node := sl.head.next[i]
-		for node != sl.tail{
-			fmt.Print(node.key)
+		node := sl.Head.next[i]
+		for node != sl.Tail {
+			fmt.Print(node.Key)
 			fmt.Print("----->")
 
 			node = node.next[i]
 		}
 		fmt.Println()
 	}
+	fmt.Println()
+	fmt.Println()
 }
 
 func MakeSkipList() SkipList{
 	var lastNode SkipListNode = SkipListNode{
 		next:  make([]*SkipListNode, 0),
-		value: nil,
-		key:   math.MaxInt64,
+		Value: nil,
+		Key:   "inf",
 	}
 	rand.Seed(time.Now().Unix())
 	nextNodes := make([]*SkipListNode, 0)
 	nextNodes = append(nextNodes, &lastNode)
 	var firstNode SkipListNode = SkipListNode{
 		next:  nextNodes,
-		value: nil,
-		key:   math.MinInt64,
+		Value: nil,
+		Key:   "-inf",
 	}
 	
 	sl := SkipList{
 		maxHeight: 100,
 		height:    0,
-		size:      0,
-		head:      &firstNode,
-		tail: &lastNode,
+		Size:      0,
+		Head:      &firstNode,
+		Tail:      &lastNode,
 	}
 
 	return sl
 }
 
-func (sl *SkipList) Add(key int64, val []byte){
+func Greater(key1 string, key2 string) bool{
+	if strings.Compare(key1, "inf") == 0{
+		return true
+	}else if strings.Compare(key1, "-inf") == 0{
+		return false
+	}else if strings.Compare(key2, "inf") == 0{
+		return false
+	}else if strings.Compare(key2, "-inf") == 0{
+		return true
+	}else{
+		return key1 > key2
+	}
+}
+func GreaterEqual(key1 string, key2 string) bool{
+	if strings.Compare(key1, "inf") == 0{
+		return true
+	}else if strings.Compare(key1, "-inf") == 0{
+		return false
+	}else if strings.Compare(key2, "inf") == 0{
+		return false
+	}else if strings.Compare(key2, "-inf") == 0{
+		return true
+	}else{
+		return key1 >= key2
+	}
+}
+
+func (sl *SkipList) Add(key string, val []byte){
+
 	h := sl.height
-	node := sl.head
+	node := sl.Head
 	levelPath := make([]*SkipListNode, 0)
 	for i := h; i >= 0; i--{
-		for key > node.next[i].key {
+		for Greater(key, node.next[i].Key) {
 			node = node.next[i]
 		}
 		// cuva se putanja kojom se islo, odnosno poslednji(skroz desno) cvor kojim smo se kretali kroz listu
@@ -91,29 +121,29 @@ func (sl *SkipList) Add(key int64, val []byte){
 	levelPath = reverseSlice(levelPath)
 
 	//ukoliko taj kljuc vec postoji samo se menja vrednost
-	if levelPath[0].next[0].key == key{
-		levelPath[0].next[0].value = val
+	if levelPath[0].next[0].Key == key{
+		levelPath[0].next[0].Value = val
 		return
 	}
 
 	//uzima se nasumicna vrednost za nivo propagacije
 	lvl := sl.roll()
-	fmt.Println(lvl)
+	//fmt.Println(lvl)
 
 
-	// dodaju se potrebne liste koje povezuju head i tail ukoliko je visina veca od predjasnje
+	// dodaju se potrebne liste koje povezuju head i Tail ukoliko je visina veca od predjasnje
 	if lvl > sl.height{
 		for i := sl.height + 1; i <= lvl; i++{
-			sl.head.next = append(sl.head.next, sl.tail)
+			sl.Head.next = append(sl.Head.next, sl.Tail)
 			sl.height ++
-			levelPath = append(levelPath, sl.head)
+			levelPath = append(levelPath, sl.Head)
 		}
 	}
 
 	// pravi se novi cvor(lvl + 1 jer lvl moze biti 0)
 	newNode := SkipListNode{
-		key:   key,
-		value: val,
+		Key:   key,
+		Value: val,
 		next:  make([]*SkipListNode, lvl + 1),
 	}
 
@@ -122,7 +152,7 @@ func (sl *SkipList) Add(key int64, val []byte){
 		newNode.next[i] = levelPath[i].next[i]
 		levelPath[i].next[i] = &newNode
 	}
-
+	sl.Size += 64 + len(val)
 }
 
 //okrece elemente u slice-u u obrnutom redosledu
@@ -133,41 +163,41 @@ func reverseSlice(s []*SkipListNode) []*SkipListNode {
 	return s
 }
 
-//nalazi vrednost cvora sa vrednoscu key
-func(sl *SkipList) SearchVal(key int64) []byte{
+//nalazi vrednost cvora sa vrednoscu Key
+func(sl *SkipList) SearchVal(key string) []byte{
 	h := sl.height
-	node := sl.head
+	node := sl.Head
 	for i := h; i >= 0; i-- {
-		for key >= node.next[i].key {
+		for GreaterEqual(key, node.next[i].Key) {
 			node = node.next[i]
 		}
 	}
-	return node.value
+	return node.Value
 }
 
-//nalazi cvor sa vrednoscu key
-func(sl *SkipList) SearchNode(key int64) *SkipListNode{
+//nalazi cvor sa vrednoscu Key
+func(sl *SkipList) SearchNode(key string) *SkipListNode{
 	h := sl.height
-	node := sl.head
+	node := sl.Head
 	for i := h; i >= 0; i-- {
-		for key >= node.next[i].key {
+		for GreaterEqual(key, node.next[i].Key) {
 			node = node.next[i]
 		}
 	}
 
-	if node.key == key{
+	if node.Key == key{
 		return node
 	}else{
 		return nil
 	}
 }
 
-func(sl *SkipList) Delete(key int64){
+func(sl *SkipList) Delete(key string){
 	h := sl.height
-	node := sl.head
+	node := sl.Head
 	levelPath := make([]*SkipListNode, 0)
 	for i := h; i >= 0; i--{
-		for key > node.next[i].key {
+		for GreaterEqual(key, node.next[i].Key) {
 			node = node.next[i]
 		}
 		// cuva se putanja kojom se islo, odnosno poslednji(skroz desno) cvor kojim smo se kretali kroz listu
@@ -177,12 +207,38 @@ func(sl *SkipList) Delete(key int64){
 	reverseSlice(levelPath)
 	// svi u level path su bili manji, proveravamo  da li je sledeci cvor trazeni cvor
 	node = levelPath[0].next[0]
-	if node.key != key{
-		panic("No such key in skip list")
+	if node.Key != key{
+		panic("No such Key in skip list")
 	}
 	//trebalo bi len(node.next) - 1
 	for i := len(node.next) - 2; i >= 0; i-- {
 		levelPath[i].next[i] = node.next[i]
 	}
+}
+func (sl *SkipList) CreateIterator() SkipListIterator{
+	return SkipListIterator{
+		start: sl.Head,
+		end:   sl.Tail,
+		curr:  sl.Head,
+	}
+}
+
+
+type SkipListIterator struct {
+	start *SkipListNode
+	end *SkipListNode
+	curr *SkipListNode
+}
+
+func(sli *SkipListIterator) HasNext() bool{
+	return sli.curr.next[0] != sli.end
+}
+
+func(sli *SkipListIterator) GetNext() *SkipListNode{
+	if sli.HasNext(){
+		sli.curr = sli.curr.next[0]
+		return sli.curr
+	}
+	return nil
 }
 
