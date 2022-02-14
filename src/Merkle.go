@@ -28,7 +28,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree{
 	var hashVal []byte
 	queue := Queue{
 		size:  0,
-		data:  make([]*Node, 1),
+		data:  make([]*Node, len(dataArray)),
 		front: 0,
 	}
 

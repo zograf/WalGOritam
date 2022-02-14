@@ -1,7 +1,6 @@
 package main
 
 import (
-	SkipList "Memtable/SkipList"
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
@@ -15,7 +14,7 @@ import (
 type Memtable struct {
 	threshold uint16
 	size uint16
-	sl *SkipList.SkipList
+	sl *SkipList
 
 }
 
@@ -30,7 +29,7 @@ func (mt *Memtable) Delete(key string){
 func (mt *Memtable) Set(key string, val []byte){
 	if mt.size + 32 + uint16(len(val)) >= mt.threshold{
 		mt.flush()
-		sl := SkipList.MakeSkipList()
+		sl := MakeSkipList()
 		*mt = Memtable{
 			threshold: mt.threshold,
 			size: 0,
@@ -63,7 +62,7 @@ func (mt *Memtable) flush(){
 
 	// iterating through zero level of skip list
 	iterator := mt.sl.CreateIterator()
-	var skipNode *SkipList.SkipListNode
+	var skipNode *SkipListNode
 
 	var CRC uint32
 	var Timestamp int64
@@ -177,7 +176,7 @@ func ReadIndex(name string){
 }
 
 func Generate(){
-	sl := SkipList.MakeSkipList()
+	sl := MakeSkipList()
 	mt := Memtable{
 		threshold: 1000,
 		size:      0,
