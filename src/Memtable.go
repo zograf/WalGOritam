@@ -19,8 +19,16 @@ type Memtable struct {
 
 }
 
-func (mt *Memtable) Add(key string, val []byte){
-	if mt.size >= mt.threshold{
+func (mt *Memtable) Get(key string) []byte{
+	return mt.sl.GetVal(key)
+}
+
+func (mt *Memtable) Delete(key string){
+	mt.sl.Delete(key)
+}
+
+func (mt *Memtable) Set(key string, val []byte){
+	if mt.size + 32 + uint16(len(val)) >= mt.threshold{
 		mt.flush()
 		sl := SkipList.MakeSkipList()
 		*mt = Memtable{
@@ -29,8 +37,8 @@ func (mt *Memtable) Add(key string, val []byte){
 			sl: &sl,
 		}
 	}
-	mt.size += 64 + uint16(len(val))
-	mt.sl.Add(key, val)
+	mt.size += 32 + uint16(len(val))
+	mt.sl.Set(key, val)
 }
 
 func (mt *Memtable) flush(){
@@ -53,7 +61,7 @@ func (mt *Memtable) flush(){
 		panic(err)
 	}
 
-	// iteriranje kroz nulti nivo skip liste
+	// iterating through zero level of skip list
 	iterator := mt.sl.CreateIterator()
 	var skipNode *SkipList.SkipListNode
 
@@ -176,30 +184,30 @@ func Generate(){
 		sl:        &sl,
 	}
 
-	mt.Add("29", []byte("thrth"))
-	mt.Add("21", []byte("dqwd"))
-	mt.Add("23", []byte("rgrt"))
-	mt.Add("67", []byte("qwd"))
-	mt.Add("5657", []byte("ewf"))
-	mt.Add("232", []byte("dxwq"))
-	mt.Add("98", []byte("rge"))
-	mt.Add("222", []byte("nnf"))
-	mt.Add("2132", []byte("zxc"))
-	mt.Add("9877", []byte("scz"))
-	mt.Add("122", []byte("mnh"))
-	mt.Add("665", []byte("oip"))
-	mt.Add("1211", []byte("bnyy"))
-	mt.Add("132", []byte("zzzz"))
+	mt.Set("29", []byte("thrth"))
+	mt.Set("21", []byte("dqwd"))
+	mt.Set("23", []byte("rgrt"))
+	mt.Set("67", []byte("qwd"))
+	mt.Set("5657", []byte("ewf"))
+	mt.Set("232", []byte("dxwq"))
+	mt.Set("98", []byte("rge"))
+	mt.Set("222", []byte("nnf"))
+	mt.Set("2132", []byte("zxc"))
+	mt.Set("9877", []byte("scz"))
+	mt.Set("122", []byte("mnh"))
+	mt.Set("665", []byte("oip"))
+	mt.Set("1211", []byte("bnyy"))
+	mt.Set("132", []byte("zzzz"))
 	fmt.Println(mt.size)
 	var i int32
 	for i= 1; i < 100; i++{
-		mt.Add(strconv.Itoa(int(i)), []byte("gfh"))
+		mt.Set(strconv.Itoa(int(i)), []byte("gfh"))
 	}
-	mt.Add("73", []byte("asd"))
-	mt.Add("27", []byte("pera"))
+	mt.Set("73", []byte("asd"))
+	mt.Set("27", []byte("pera"))
 }
 
-func ReadData(name string){
+func ReSetata(name string){
 	fl, err := os.OpenFile("res" + string(filepath.Separator) + name, os.O_RDWR, 0777)
 	fl.Seek(0, 0)
 	defer fl.Close()

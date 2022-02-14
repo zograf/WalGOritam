@@ -103,7 +103,7 @@ func GreaterEqual(key1 string, key2 string) bool{
 	}
 }
 
-func (sl *SkipList) Add(key string, val []byte){
+func (sl *SkipList) Set(key string, val []byte){
 
 	h := sl.height
 	node := sl.Head
@@ -164,7 +164,7 @@ func reverseSlice(s []*SkipListNode) []*SkipListNode {
 }
 
 //nalazi vrednost cvora sa vrednoscu Key
-func(sl *SkipList) SearchVal(key string) []byte{
+func(sl *SkipList) GetVal(key string) []byte{
 	h := sl.height
 	node := sl.Head
 	for i := h; i >= 0; i-- {
