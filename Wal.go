@@ -44,7 +44,7 @@ func newWal() *Wal {
 		fmt.Println("EPF: Valid")
 	}
 
-	files, _ := ioutil.ReadDir("WAL/")
+	files, _ := ioutil.ReadDir("wal/")
 	currentFile := len(files)
 
 	return &Wal{
@@ -70,7 +70,7 @@ func (wal *Wal) put(s string, data []byte) {
 }
 
 func (wal *Wal) deleteSegments() {
-	files, _ := ioutil.ReadDir("WAL/")
+	files, _ := ioutil.ReadDir("wal/")
 	fileCount := len(files)
 
 	if fileCount > wal.lowWatermark {
@@ -119,11 +119,11 @@ func appendToFile(file *os.File, data []byte) error {
 
 func (wal *Wal) recovery() {
 
-	files, _ := ioutil.ReadDir("WAL/")
+	files, _ := ioutil.ReadDir("wal/")
 	fileCount := len(files)
 
 	for i := 0; i < fileCount; i++ {
-		fileName := "WAL/WAL" + strconv.Itoa(i) + ".gob"
+		fileName := wal.path + strconv.Itoa(i) + ".gob"
 		source, _ := os.OpenFile(fileName, os.O_RDONLY, 0777)
 		fileL, _ := fileLen(source)
 		if fileL == 0 {
