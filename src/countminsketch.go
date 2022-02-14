@@ -20,10 +20,10 @@ type CountMinSketch struct {
 
 func newCountMinSketch(epsilon, delta float64) *CountMinSketch {
 	cmsInstance := CountMinSketch{}
-	cmsInstance.M = countMinSketchCalculateM(epsilon)
-	cmsInstance.K = countMinSketchCalculateK(delta)
+	cmsInstance.M = cmsInstance.calculateM(epsilon)
+	cmsInstance.K = cmsInstance.calculateK(delta)
 	cmsInstance.Seed = uint32(time.Now().Unix())
-	cmsInstance.hashArray = countMinSketchCreateHashFunctions(cmsInstance.K, cmsInstance.Seed)
+	cmsInstance.hashArray = cmsInstance.createHashFunctions(cmsInstance.K, cmsInstance.Seed)
 	cmsInstance.Memory = make([][]uint32, cmsInstance.K)
 	for i := range cmsInstance.Memory {
 		cmsInstance.Memory[i] = make([]uint32, cmsInstance.M)
@@ -61,15 +61,15 @@ func (cms *CountMinSketch) find(element string) uint32 {
 
 }
 
-func countMinSketchCalculateM(epsilon float64) uint32 {
+func (cms *CountMinSketch) calculateM(epsilon float64) uint32 {
 	return uint32(math.Ceil(math.E / epsilon))
 }
 
-func countMinSketchCalculateK(delta float64) uint32 {
+func (cms *CountMinSketch) calculateK(delta float64) uint32 {
 	return uint32(math.Ceil(math.Log(math.E / delta)))
 }
 
-func countMinSketchCreateHashFunctions(k, seed uint32) []hash.Hash32 {
+func (cms *CountMinSketch) createHashFunctions(k, seed uint32) []hash.Hash32 {
 	h := []hash.Hash32{}
 	for i := uint32(0); i < k; i++ {
 		h = append(h, murmur3.New32WithSeed(uint32(seed+i)))
@@ -92,7 +92,7 @@ func decodeCountMinSketch(path string) *CountMinSketch {
 	decoder := gob.NewDecoder(file)
 	var cms CountMinSketch
 	err = decoder.Decode(&cms)
-	cms.hashArray = countMinSketchCreateHashFunctions(cms.K, cms.Seed)
+	cms.hashArray = cms.createHashFunctions(cms.K, cms.Seed)
 	file.Close()
 	return &cms
 }
