@@ -2,6 +2,7 @@ package src
 
 import (
 	"encoding/binary"
+	"encoding/gob"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,6 +15,35 @@ type LSM struct {
 	Indexes        map[int][]string
 	LevelsMax      []uint8
 	LevelsRequired []uint8
+}
+
+func makeLSM(max, req []uint8) *LSM {
+	l := LSM{}
+	l.Data = make(map[int][]string, 0)
+	l.Indexes = make(map[int][]string, 0)
+	l.LevelsMax = max
+	l.LevelsRequired = req
+	return &l
+}
+
+// Serializing
+func EncodeLSM(l *LSM, path string) {
+	file, err := os.Create(path)
+	check(err)
+	encoder := gob.NewEncoder(file)
+	encoder.Encode(l)
+	file.Close()
+}
+
+// Deserializing
+func DecodeLSM(path string) *LSM {
+	file, err := os.Open(path)
+	check(err)
+	decoder := gob.NewDecoder(file)
+	var l LSM
+	err = decoder.Decode(&l)
+	file.Close()
+	return &l
 }
 
 func (l *LSM) Check() (bool, int) {
@@ -32,9 +62,9 @@ func (l *LSM) Check() (bool, int) {
 	return false, 0
 }
 
-func (l *LSM) Insert(level int, data, index string) {
-	l.Data[level] = append(l.Data[level], data)
-	l.Indexes[level] = append(l.Indexes[level], index)
+func (l *LSM) Insert(data, index string) {
+	l.Data[0] = append(l.Data[0], data)
+	l.Indexes[0] = append(l.Indexes[0], index)
 }
 
 // Compressing 2 SSTables
