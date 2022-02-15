@@ -3,9 +3,11 @@ package src
 import (
 	"encoding/binary"
 	"fmt"
+	"strconv"
 )
 
 type DoublyLinkedListNode struct {
+	Key      string
 	Value    []byte
 	previous *DoublyLinkedListNode
 	next     *DoublyLinkedListNode
@@ -22,8 +24,9 @@ func (doublyLinkedList *DoublyLinkedList) isEmpty() bool {
 	return doublyLinkedList.count == 0
 }
 
-func (doublyLinkedList *DoublyLinkedList) AddFirst(value []byte) *DoublyLinkedListNode {
+func (doublyLinkedList *DoublyLinkedList) AddFirst(key string, value []byte) (*DoublyLinkedListNode, string) {
 	newNode := DoublyLinkedListNode{
+		Key:      key,
 		Value:    value,
 		previous: doublyLinkedList.head,
 		next:     doublyLinkedList.head.next,
@@ -31,30 +34,34 @@ func (doublyLinkedList *DoublyLinkedList) AddFirst(value []byte) *DoublyLinkedLi
 	doublyLinkedList.head.next.previous = &newNode
 	doublyLinkedList.head.next = &newNode
 	doublyLinkedList.count++
+	deletedKey := ""
 	if doublyLinkedList.count > doublyLinkedList.maxCount {
-		doublyLinkedList.removeLast()
+		deletedKey = doublyLinkedList.removeLast()
 	}
 
-	return &newNode
+	return &newNode, deletedKey
 }
 
-func (doublyLinkedList *DoublyLinkedList) removeLast() {
+func (doublyLinkedList *DoublyLinkedList) removeLast() string {
 	if doublyLinkedList.isEmpty() {
-		return
+		return ""
 	}
-
+	deletedKey := ""
 	if doublyLinkedList.count == 1 {
+		deletedKey = doublyLinkedList.tail.previous.Key
 		doublyLinkedList.tail.previous = doublyLinkedList.head
 		doublyLinkedList.head.next = doublyLinkedList.tail
 	} else {
+		deletedKey = doublyLinkedList.tail.previous.Key
 		newLast := doublyLinkedList.tail.previous.previous
 		newLast.next = doublyLinkedList.tail
 		doublyLinkedList.tail.previous = newLast
 	}
 	doublyLinkedList.count--
+	return deletedKey
 }
 
-func NewDoublyLinkedList(maxcount int) DoublyLinkedList {
+func NewDoublyLinkedList(maxCount int) DoublyLinkedList {
 	head := DoublyLinkedListNode{
 		Value:    nil,
 		previous: nil,
@@ -71,7 +78,7 @@ func NewDoublyLinkedList(maxcount int) DoublyLinkedList {
 		head:     &head,
 		tail:     &tail,
 		count:    0,
-		maxCount: maxcount,
+		maxCount: maxCount,
 	}
 
 	return dl
@@ -96,7 +103,7 @@ func DoublyLinkedTest() {
 	for i := 0; i < 20; i++ {
 		bs := make([]byte, 4)
 		binary.LittleEndian.PutUint32(bs, uint32(i))
-		dl.AddFirst(bs)
+		dl.AddFirst(strconv.Itoa(i), bs)
 	}
 	fmt.Println("done")
 
