@@ -64,7 +64,7 @@ func (mt *Memtable) flush() {
 	var skipNode *SkipListNode
 
 	var CRC uint32
-	var Timestamp int64
+	var Timestamp uint64
 	var Tombstone byte
 	var ValueSize uint8
 	var key []byte
@@ -76,7 +76,7 @@ func (mt *Memtable) flush() {
 		skipNode = iterator.GetNext()
 
 		CRC = CRC32(skipNode.Value)
-		Timestamp = time.Now().Unix()
+		Timestamp = uint64(time.Now().Unix())
 		Tombstone = 0
 		ValueSize = uint8(binary.Size(skipNode.Value))
 		key = []byte(skipNode.Key)
@@ -108,99 +108,26 @@ func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
 }
 
-func WriteIndexRow(key []byte, keySize uint8, offset uint16, indexF *os.File) {
-	err := binary.Write(indexF, binary.LittleEndian, keySize)
-	if err != nil {
-		panic(err)
-	}
 
-	err = binary.Write(indexF, binary.LittleEndian, key)
-	if err != nil {
-		panic(err)
-	}
-
-	err = binary.Write(indexF, binary.LittleEndian, offset)
-	if err != nil {
-		panic(err)
-	}
-}
-
-type IndexEntry struct {
+type Entry struct {
+	CRC uint32
+	Timestamp uint64
+	Tombstone byte
+	ValueSize uint8
+	key string
 	KeySize uint8
-	Key string
-	Offset uint16
+	value []byte
 }
 
+func ReadDataRow(name string, offset uint16) Entry{
+	var CRC uint32
+	var Timestamp uint64
+	var Tombstone byte
+	var ValueSize uint8
+	var Key string
+	var KeySize uint8
+	var value []byte
 
-type IndexIterator struct {
-	file *os.File
-}
-
-func (mti *IndexIterator) HasNext() bool {
-	temp := make([]byte, 1)
-	_, err := mti.file.Read(temp)
-
-	// return to position before function call
-	mti.file.Seek(-1, 1)
-	if err != nil {
-		if err == io.EOF {
-			return false
-		} else {
-			return true
-		}
-	}
-	return true
-}
-
-func (mti *IndexIterator) GetNext() *IndexEntry {
-	if mti.HasNext() {
-		temp := make([]byte, 1)
-		_, err := mti.file.Read(temp)
-		if err != nil {
-			panic(err)
-		}
-		KeySize := temp[0]
-		fmt.Println("Key size")
-		fmt.Println(KeySize)
-
-		data1 := make([]byte, KeySize)
-		_, err = mti.file.Read(data1)
-		if err != nil {
-			panic(err)
-		}
-		Key := string(data1[:])
-		fmt.Println("key")
-		fmt.Println(Key)
-
-		data2 := make([]byte, 2)
-		_, err = mti.file.Read(data2)
-		if err != nil {
-			panic(err)
-		}
-		Offset := binary.LittleEndian.Uint16(data2)
-		fmt.Println("Offset")
-		fmt.Println(Offset)
-		fmt.Println("-------------------------------------------")
-		return &IndexEntry{
-			KeySize: KeySize,
-			Key:     Key,
-			Offset:  Offset,
-		}
-	}
-	return nil
-}
-
-func ReadIndex(name string) {
-	fl, _ := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
-	defer fl.Close()
-
-	it := IndexIterator{file: fl}
-	for it.HasNext(){
-		it.GetNext()
-	}
-}
-
-func ReadDataRow(name string, offset uint16){
 	file, err := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
 	if err != nil {
 		panic(err)
@@ -212,71 +139,82 @@ func ReadDataRow(name string, offset uint16){
 		panic(err)
 	}
 
-	CRC := make([]byte, 4)
-	_, err = file.Read(CRC)
+	data1 := make([]byte, 4)
+	_, err = file.Read(data1)
 	if err != nil {
 		panic(err)
 	}
-	data := binary.LittleEndian.Uint32(CRC)
+	CRC = binary.LittleEndian.Uint32(data1)
 	fmt.Println("CRC:")
-	fmt.Println(data)
+	fmt.Println(CRC)
 
-	Timestamp := make([]byte, 8)
-	_, err = file.Read(Timestamp)
+	data2 := make([]byte, 8)
+	_, err = file.Read(data2)
 	if err != nil {
 		panic(err)
 	}
-	data = binary.LittleEndian.Uint32(Timestamp)
+	Timestamp = binary.LittleEndian.Uint64(data2)
 	fmt.Println("timestamp:")
-	fmt.Println(int64(data))
+	fmt.Println(int64(Timestamp))
 
-	Tombstone := make([]byte, 1)
-	_, err = file.Read(Tombstone)
+	data3 := make([]byte, 1)
+	_, err = file.Read(data3)
 	if err != nil {
 		panic(err)
 	}
+	Tombstone = data3[0]
 	fmt.Println("tombstone:")
 	fmt.Println(Tombstone)
 
-	temp := make([]byte, 1)
-	_, err = file.Read(temp)
+	data4 := make([]byte, 1)
+	_, err = file.Read(data4)
 	if err != nil {
 		panic(err)
 	}
 
-	KeySize := uint8(temp[0])
+	KeySize = data4[0]
 	fmt.Println("Key size")
 	fmt.Println(KeySize)
 
-	temp = make([]byte, 1)
-	_, err = file.Read(temp)
+	data5 := make([]byte, 1)
+	_, err = file.Read(data5)
 	if err != nil {
 		panic(err)
 	}
-	ValueSize := uint8(temp[0])
+	ValueSize = data5[0]
 	fmt.Println("Value size")
 	fmt.Println(ValueSize)
 
-	Key := make([]byte, KeySize)
-	_, err = file.Read(Key)
+	data6 := make([]byte, KeySize)
+	_, err = file.Read(data6)
 	if err != nil {
 		panic(err)
 	}
 
-	data1 := string(Key[:])
+	Key = string(data6[:])
 	fmt.Println("key")
-	fmt.Println(data1)
+	fmt.Println(Key)
 
-	Value := make([]byte, ValueSize)
-	_, err = file.Read(Value)
+	data7 := make([]byte, ValueSize)
+	_, err = file.Read(data7)
 	if err != nil {
 		panic(err)
 	}
 
+	value = data7
 	fmt.Println("val:")
-	fmt.Println(string(Value))
+	fmt.Println(string(data7))
 
 	fmt.Println("--------------------------------")
+	return Entry{
+		CRC:       CRC,
+		Timestamp: Timestamp,
+		Tombstone: Tombstone,
+		ValueSize: ValueSize,
+		key:       Key,
+		KeySize:   KeySize,
+		value:     value,
+	}
 }
 
 // samo za testiranje, puca
