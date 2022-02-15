@@ -23,7 +23,7 @@ type HLL struct {
 	hashFunction hash.Hash32
 }
 
-func newHLL(p uint8) *HLL {
+func NewHLL(p uint8) *HLL {
 	hll := HLL{}
 	hll.P = p
 	hll.M = uint64(math.Pow(2, float64(p)))
@@ -55,7 +55,7 @@ func (hll *HLL) hash(element string) uint32 {
 	return value
 }
 
-func (hll *HLL) add(element string) {
+func (hll *HLL) Add(element string) {
 	binaryRepresentation := strconv.FormatUint(uint64(hll.hash(element)), 2)
 	leading := binaryRepresentation[:hll.P]
 	bucketIndex, err := strconv.ParseUint(leading, 2, 32)
@@ -71,7 +71,7 @@ func (hll *HLL) add(element string) {
 }
 
 // Serializing
-func encodeHLL(hll *HLL, path string) {
+func EncodeHLL(hll *HLL, path string) {
 	file, err := os.Create(path)
 	check(err)
 	encoder := gob.NewEncoder(file)
@@ -80,7 +80,7 @@ func encodeHLL(hll *HLL, path string) {
 }
 
 // Deserializing
-func decodeHLL(path string) *HLL {
+func DecodeHLL(path string) *HLL {
 	file, err := os.Open(path)
 	check(err)
 	decoder := gob.NewDecoder(file)

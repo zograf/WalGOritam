@@ -18,7 +18,7 @@ type CountMinSketch struct {
 	hashArray []hash.Hash32
 }
 
-func newCountMinSketch(epsilon, delta float64) *CountMinSketch {
+func NewCountMinSketch(epsilon, delta float64) *CountMinSketch {
 	cmsInstance := CountMinSketch{}
 	cmsInstance.M = cmsInstance.calculateM(epsilon)
 	cmsInstance.K = cmsInstance.calculateK(delta)
@@ -42,14 +42,14 @@ func (cms *CountMinSketch) hash(element string) []uint32 {
 	return hashed
 }
 
-func (cms *CountMinSketch) add(element string) {
+func (cms *CountMinSketch) Add(element string) {
 	hashed := cms.hash(element)
 	for row, column := range hashed {
 		cms.Memory[row][column] += 1
 	}
 }
 
-func (cms *CountMinSketch) find(element string) uint32 {
+func (cms *CountMinSketch) Find(element string) uint32 {
 	hashed := cms.hash(element)
 	min := uint32(math.MaxUint32)
 	for row, column := range hashed {
@@ -77,7 +77,7 @@ func (cms *CountMinSketch) createHashFunctions(k, seed uint32) []hash.Hash32 {
 	return h
 }
 
-func encodeCountMinSketch(cms *CountMinSketch, path string) {
+func EncodeCountMinSketch(cms *CountMinSketch, path string) {
 	file, err := os.Create(path)
 	check(err)
 	encoder := gob.NewEncoder(file)
@@ -86,7 +86,7 @@ func encodeCountMinSketch(cms *CountMinSketch, path string) {
 }
 
 // Deserializing
-func decodeCountMinSketch(path string) *CountMinSketch {
+func DecodeCountMinSketch(path string) *CountMinSketch {
 	file, err := os.Open(path)
 	check(err)
 	decoder := gob.NewDecoder(file)

@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	"encoding/gob"
@@ -19,7 +19,7 @@ type TokenBucket struct {
 	Timestamp int64
 }
 
-func newTokenBucket() *TokenBucket {
+func NewTokenBucket() *TokenBucket {
 	tb := TokenBucket{}
 	tb.Bucket = MAX_BUCKET
 	tb.Timestamp = time.Now().Unix()
@@ -35,7 +35,7 @@ func (tb *TokenBucket) checkTimeStamp() bool {
 }
 
 // TODO: Replace prints with actual return errors
-func (tb *TokenBucket) process(request uint8) error {
+func (tb *TokenBucket) Process(request uint8) error {
 	// Check if timestamp needs to be updated
 	if tb.checkTimeStamp() {
 		tb.Bucket = MAX_BUCKET
@@ -52,7 +52,7 @@ func (tb *TokenBucket) process(request uint8) error {
 
 // Encode/Decode for TokenBucket
 // is probably unneccessary
-func encodeTokenBucket(tb *TokenBucket, path string) {
+func EncodeTokenBucket(tb *TokenBucket, path string) {
 	file, err := os.Create(path)
 	check(err)
 	encoder := gob.NewEncoder(file)
@@ -60,7 +60,7 @@ func encodeTokenBucket(tb *TokenBucket, path string) {
 	file.Close()
 }
 
-func decodeTokenBucket(path string) *TokenBucket {
+func DecodeTokenBucket(path string) *TokenBucket {
 	file, err := os.Open(path)
 	check(err)
 	decoder := gob.NewDecoder(file)

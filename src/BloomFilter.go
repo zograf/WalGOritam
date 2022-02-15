@@ -35,7 +35,7 @@ type BloomFilter struct {
 	Memory    []byte
 }
 
-func newBloomFilter(expectedElements int, falsePositiveRate float64) *BloomFilter {
+func NewBloomFilter(expectedElements int, falsePositiveRate float64) *BloomFilter {
 	bfInstance := BloomFilter{}
 	bfInstance.Seed = uint32(time.Now().Unix())
 	bfInstance.M = bfInstance.calculateM(expectedElements, falsePositiveRate)
@@ -59,13 +59,13 @@ func (bf *BloomFilter) hash(element string) []uint32 {
 	return hashArray
 }
 
-func (bf *BloomFilter) add(element string) {
+func (bf *BloomFilter) Add(element string) {
 	for _, index := range bf.hash(element) {
 		bf.Memory[index] = 1
 	}
 }
 
-func (bf *BloomFilter) isInBloomFilter(element string) bool {
+func (bf *BloomFilter) IsInBloomFilter(element string) bool {
 	for _, index := range bf.hash(element) {
 		if bf.Memory[index] != 1 {
 			return false
@@ -75,7 +75,7 @@ func (bf *BloomFilter) isInBloomFilter(element string) bool {
 }
 
 // Serializing
-func encodeBloomFilter(bf *BloomFilter, path string) {
+func EncodeBloomFilter(bf *BloomFilter, path string) {
 	file, err := os.Create(path)
 	check(err)
 	encoder := gob.NewEncoder(file)
@@ -84,7 +84,7 @@ func encodeBloomFilter(bf *BloomFilter, path string) {
 }
 
 // Deserializing
-func decodeBloomFilter(path string) *BloomFilter {
+func DecodeBloomFilter(path string) *BloomFilter {
 	file, err := os.Open(path)
 	check(err)
 	decoder := gob.NewDecoder(file)
