@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const THRESHOLD = 10000
+
 type Memtable struct {
 	threshold uint16
 	size      uint16
@@ -72,6 +74,7 @@ func (mt *Memtable) flush() {
 	var value []byte
 	var offset uint16
 
+	indexEntryCount := 0
 	for iterator.HasNext() {
 		skipNode = iterator.GetNext()
 
@@ -101,25 +104,25 @@ func (mt *Memtable) flush() {
 		binary.Write(fl, binary.LittleEndian, value)
 
 		WriteIndexRow(key, KeySize, offset, indexF)
+		indexEntryCount++
 	}
-
+	GenerateSummary(indexF)
 }
 func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
 }
 
-
 type Entry struct {
-	CRC uint32
+	CRC       uint32
 	Timestamp uint64
 	Tombstone byte
 	ValueSize uint8
-	key string
-	KeySize uint8
-	value []byte
+	key       string
+	KeySize   uint8
+	value     []byte
 }
 
-func ReadDataRow(name string, offset uint16) Entry{
+func ReadDataRow(name string, offset uint16) Entry {
 	var CRC uint32
 	var Timestamp uint64
 	var Tombstone byte
@@ -227,7 +230,7 @@ func ReadData(name string) {
 func Generate() {
 	sl := MakeSkipList()
 	mt := Memtable{
-		threshold: 1000,
+		threshold: THRESHOLD,
 		size:      0,
 		sl:        &sl,
 	}
@@ -254,5 +257,3 @@ func Generate() {
 	mt.Set("73", []byte("asd"))
 	mt.Set("27", []byte("pera"))
 }
-
-
