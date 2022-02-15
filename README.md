@@ -1,3 +1,4 @@
-WAL GO RITAM
-kao igra reci
-ne a? ok
+# WAL GO RITAM
+Kao igra reci :D  
+ne a?  
+ok :(
