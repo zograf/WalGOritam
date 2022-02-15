@@ -16,7 +16,7 @@ type LSM struct {
 	LevelsRequired []uint8
 }
 
-func (l *LSM) Check() (bool, uint8) {
+func (l *LSM) Check() (bool, int) {
 	// LevelsMax and LevelsRequired are the same size
 	for i := range l.LevelsMax {
 		max := l.LevelsMax[i]
@@ -24,9 +24,9 @@ func (l *LSM) Check() (bool, uint8) {
 		data := uint8(len(l.Data[i]))
 		// If size of data reached max or required threshold
 		if data == max {
-			return true, uint8(i)
+			return true, i
 		} else if data >= req {
-			return true, uint8(i)
+			return true, i
 		}
 	}
 	return false, 0
@@ -38,7 +38,7 @@ func (l *LSM) Insert(level int, data, index string) {
 }
 
 // Compressing 2 SSTables
-func (l *LSM) Compress(dataFirst, dataSecond, indFirst, indSecond string) {
+func (l *LSM) Compress(dataFirst, dataSecond, indFirst, indSecond string) (string, string) {
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
 	tablePath := "res" + string(filepath.Separator) + nowStr + ".bin"
 	indexPath := "res" + string(filepath.Separator) + nowStr + "Index.bin"
@@ -97,8 +97,7 @@ func (l *LSM) Compress(dataFirst, dataSecond, indFirst, indSecond string) {
 	os.Remove(dataSecond)
 	os.Remove(indFirst)
 	os.Remove(indSecond)
-	// TODO: Update l.data
-	// TODO: Create summary
+	return tablePath, indexPath
 }
 
 func (l *LSM) processEntry(entry Entry, offset uint16, table, index *os.File) {
@@ -123,4 +122,28 @@ func (l *LSM) processEntry(entry Entry, offset uint16, table, index *os.File) {
 	binary.Write(table, binary.LittleEndian, entry.value)
 
 	WriteIndexRow([]byte(entry.key), entry.KeySize, offset, index)
+}
+
+func (l *LSM) Run() {
+	for {
+		ok, level := l.Check()
+		if !ok {
+			break
+		}
+		for {
+			dataFirst, dataSecond := l.Data[level][0], l.Data[level][1]
+			indFirst, indSecond := l.Indexes[level][0], l.Indexes[level][1]
+			l.Data[level] = append(l.Data[level][2:])
+			l.Indexes[level] = append(l.Indexes[level][2:])
+			// Compress and retreive dataPath, indexPath
+			data, index := l.Compress(dataFirst, dataSecond, indFirst, indSecond)
+			l.Data[level+1] = append(l.Data[level+1], data)
+			l.Indexes[level+1] = append(l.Indexes[level+1], index)
+			//TODO: Create summary
+			// Exit condition (no more compacting on this level)
+			if len(l.Data[level]) <= 1 {
+				break
+			}
+		}
+	}
 }
