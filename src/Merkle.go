@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	"crypto/sha1"
@@ -6,11 +6,12 @@ import (
 )
 
 type Node struct {
-	left *Node
+	left  *Node
 	right *Node
-	hash []byte
+	hash  []byte
 }
-func (node *Node) isLeaf() bool{
+
+func (node *Node) isLeaf() bool {
 	return node.left == nil && node.right == nil
 }
 
@@ -18,11 +19,11 @@ type MerkleTree struct {
 	root *Node
 }
 
-func Pow(a int, b int) int{
+func Pow(a int, b int) int {
 	return int(math.Pow(float64(a), float64(b)))
 }
 
-func FormMerkle(dataArray [][]byte) MerkleTree{
+func FormMerkle(dataArray [][]byte) MerkleTree {
 
 	h := sha1.New()
 	var hashVal []byte
@@ -33,7 +34,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree{
 	}
 
 	hashes := make([][]byte, len(dataArray))
-	for i, data := range dataArray{
+	for i, data := range dataArray {
 		h.Write(data)
 		hashVal = h.Sum(nil)
 		hashes[i] = hashVal
@@ -52,7 +53,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree{
 	var numOfChildren int
 	var numOfParents int
 	numOfParents = n
-	for !queue.IsEmpty(){
+	for !queue.IsEmpty() {
 		// at this height we need this many parent nodes
 		numOfChildren = numOfParents
 		numOfParents = (numOfChildren + 1) / 2
@@ -61,14 +62,14 @@ func FormMerkle(dataArray [][]byte) MerkleTree{
 		for i := 0; i < numOfParents; i++ {
 			child1 = queue.Dequeue()
 			// only last element may not have it's right child and that happens when number of children is odd
-			if i == numOfParents - 1 && numOfChildren % 2 == 1 {
+			if i == numOfParents-1 && numOfChildren%2 == 1 {
 				// if parent has only one child his hash is same as child's hash
 				parentNodes[i] = &Node{
 					left:  child1,
 					right: nil,
 					hash:  child1.hash,
 				}
-			}else{
+			} else {
 				child2 = queue.Dequeue()
 				// we combine bytes and then hash them
 				h.Write(append(child1.hash, child2.hash...))
@@ -80,7 +81,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree{
 				}
 			}
 			// if we enqueue root each time the loop will never end
-			if queue.IsEmpty(){
+			if queue.IsEmpty() {
 				break
 			}
 			queue.Enqueue(parentNodes[i])

@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	"encoding/binary"
@@ -210,3 +210,7 @@ func WalTest() {
 	wal.deleteSegments()
 	wal.recovery()
 }
+
+//func main() {
+//	fmt.Println("asd")
+//}

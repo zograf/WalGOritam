@@ -1,10 +1,9 @@
-package main
+package src
 
 import (
 	"encoding/binary"
 	_ "fmt"
 	_ "hash"
-	"hash/crc32"
 	_ "math"
 	_ "sort"
 	"time"
@@ -45,9 +44,9 @@ const (
 	VALUE_SIZE     = KEY_SIZE + T_SIZE
 )
 
-func CRC32(data []byte) uint32 {
-	return crc32.ChecksumIEEE(data)
-}
+//func CRC32(data []byte) uint32 {
+//	return crc32.ChecksumIEEE(data)
+//}
 
 func newWalEntry() *WalEntry {
 	entry := WalEntry{
@@ -104,4 +103,8 @@ func (walEntry *WalEntry) toBytes() []byte {
 	allBytes = append(allBytes, walEntry.Value...)
 
 	return allBytes
+}
+
+func main() {
+	WalTest()
 }

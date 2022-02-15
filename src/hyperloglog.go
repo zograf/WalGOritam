@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	"encoding/gob"
@@ -107,13 +107,12 @@ func main() {
 	fmt.Println(newHLL.M)
 	fmt.Println(newHLL.P)
 	fmt.Println(newHLL.Registers)
-}
+}*/
 func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
-*/
 
 func (hll *HLL) Estimate() float64 {
 	sum := 0.0

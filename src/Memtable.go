@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	"encoding/binary"
@@ -13,36 +13,35 @@ import (
 
 type Memtable struct {
 	threshold uint16
-	size uint16
-	sl *SkipList
-
+	size      uint16
+	sl        *SkipList
 }
 
-func (mt *Memtable) Get(key string) []byte{
+func (mt *Memtable) Get(key string) []byte {
 	return mt.sl.GetVal(key)
 }
 
-func (mt *Memtable) Delete(key string){
+func (mt *Memtable) Delete(key string) {
 	mt.sl.Delete(key)
 }
 
-func (mt *Memtable) Set(key string, val []byte){
-	if mt.size + 32 + uint16(len(val)) >= mt.threshold{
+func (mt *Memtable) Set(key string, val []byte) {
+	if mt.size+32+uint16(len(val)) >= mt.threshold {
 		mt.flush()
 		sl := MakeSkipList()
 		*mt = Memtable{
 			threshold: mt.threshold,
-			size: 0,
-			sl: &sl,
+			size:      0,
+			sl:        &sl,
 		}
 	}
 	mt.size += 32 + uint16(len(val))
 	mt.sl.Set(key, val)
 }
 
-func (mt *Memtable) flush(){
+func (mt *Memtable) flush() {
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	fl, err := os.Create("res" +  string(filepath.Separator) + nowStr + ".bin")
+	fl, err := os.Create("res" + string(filepath.Separator) + nowStr + ".bin")
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +50,7 @@ func (mt *Memtable) flush(){
 		panic(err)
 	}
 
-	indexF, err := os.Create("res" +  string(filepath.Separator) + nowStr + "Index" + ".bin")
+	indexF, err := os.Create("res" + string(filepath.Separator) + nowStr + "Index" + ".bin")
 	if err != nil {
 		panic(err)
 	}
@@ -73,7 +72,7 @@ func (mt *Memtable) flush(){
 	var value []byte
 	var offset uint16
 
-	for iterator.HasNext(){
+	for iterator.HasNext() {
 		skipNode = iterator.GetNext()
 
 		CRC = CRC32(skipNode.Value)
@@ -126,10 +125,8 @@ func WriteIndexRow(key []byte, keySize uint8, offset uint16, indexF *os.File) {
 	}
 }
 
-
-
-func ReadIndex(name string){
-	fl, _ := os.OpenFile("res" + string(filepath.Separator) + name, os.O_RDWR, 0777)
+func ReadIndex(name string) {
+	fl, _ := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
 	fl.Seek(0, 0)
 	defer fl.Close()
 
@@ -137,9 +134,9 @@ func ReadIndex(name string){
 		temp := make([]byte, 1)
 		_, err := fl.Read(temp)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -150,9 +147,9 @@ func ReadIndex(name string){
 		Key := make([]byte, KeySize)
 		_, err = fl.Read(Key)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -163,9 +160,9 @@ func ReadIndex(name string){
 		Offset := make([]byte, 2)
 		_, err = fl.Read(Offset)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -175,7 +172,7 @@ func ReadIndex(name string){
 	}
 }
 
-func Generate(){
+func Generate() {
 	sl := MakeSkipList()
 	mt := Memtable{
 		threshold: 1000,
@@ -199,26 +196,26 @@ func Generate(){
 	mt.Set("132", []byte("zzzz"))
 	fmt.Println(mt.size)
 	var i int32
-	for i= 1; i < 100; i++{
+	for i = 1; i < 100; i++ {
 		mt.Set(strconv.Itoa(int(i)), []byte("gfh"))
 	}
 	mt.Set("73", []byte("asd"))
 	mt.Set("27", []byte("pera"))
 }
 
-func ReSetata(name string){
-	fl, err := os.OpenFile("res" + string(filepath.Separator) + name, os.O_RDWR, 0777)
+func ReSetata(name string) {
+	fl, err := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
 	fl.Seek(0, 0)
 	defer fl.Close()
 	fmt.Println("CRC")
-	for{
+	for {
 		fmt.Println(fl.Seek(0, io.SeekCurrent))
 		CRC := make([]byte, 4)
 		_, err = fl.Read(CRC)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -228,9 +225,9 @@ func ReSetata(name string){
 		Timestamp := make([]byte, 8)
 		_, err = fl.Read(Timestamp)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -241,9 +238,9 @@ func ReSetata(name string){
 		Tombstone := make([]byte, 1)
 		_, err = fl.Read(Tombstone)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -253,9 +250,9 @@ func ReSetata(name string){
 		temp := make([]byte, 1)
 		_, err = fl.Read(temp)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -266,9 +263,9 @@ func ReSetata(name string){
 		temp = make([]byte, 1)
 		_, err = fl.Read(temp)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -279,9 +276,9 @@ func ReSetata(name string){
 		Key := make([]byte, KeySize)
 		_, err = fl.Read(Key)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
@@ -289,13 +286,12 @@ func ReSetata(name string){
 		fmt.Println("key")
 		fmt.Println(data1)
 
-
 		Value := make([]byte, ValueSize)
 		_, err = fl.Read(Value)
 		if err != nil {
-			if err == io.EOF{
+			if err == io.EOF {
 				break
-			}else{
+			} else {
 				panic(err)
 			}
 		}
