@@ -27,7 +27,7 @@ type Wal struct {
 	path           string
 }
 
-func newWal() *Wal {
+func NewWal() *Wal {
 	threshold := THRESHOLD_DEFAULT
 	entriesPerFile := ENTRIES_PER_FILE_DEFAULT
 	lowWatermark := LOW_WATERMARK
@@ -198,7 +198,7 @@ func fileLen(file *os.File) (int64, error) {
 }
 
 func WalTest() {
-	wal := newWal()
+	wal := NewWal()
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 10; j++ {
 			bs := make([]byte, 4)

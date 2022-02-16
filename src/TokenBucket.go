@@ -2,7 +2,7 @@ package src
 
 import (
 	"encoding/gob"
-	"fmt"
+	"errors"
 	"os"
 	"time"
 )
@@ -10,12 +10,12 @@ import (
 // MAX_BUCKET - Max amount of tokens
 // INTERVAL   - Reset time (in seconds)
 const (
-	MAX_BUCKET = 4
-	INTERVAL   = 5
+	MAX_BUCKET = 9999999
+	INTERVAL   = 60
 )
 
 type TokenBucket struct {
-	Bucket    uint8
+	Bucket    int64
 	Timestamp int64
 }
 
@@ -34,19 +34,16 @@ func (tb *TokenBucket) checkTimeStamp() bool {
 	return false
 }
 
-// TODO: Replace prints with actual return errors
-func (tb *TokenBucket) Process(request uint8) error {
+func (tb *TokenBucket) CheckBucket() error {
 	// Check if timestamp needs to be updated
 	if tb.checkTimeStamp() {
 		tb.Bucket = MAX_BUCKET
 		tb.Timestamp = time.Now().Unix()
 	}
 	if tb.Bucket == 0 {
-		fmt.Println("There are no more tokens left")
-	} else {
-		tb.Bucket--
-		fmt.Println("Request processed successfully")
+		return errors.New("There are no more tokens left")
 	}
+	tb.Bucket--
 	return nil
 }
 

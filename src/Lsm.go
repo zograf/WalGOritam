@@ -4,23 +4,21 @@ import (
 	"encoding/binary"
 	"encoding/gob"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
 type LSM struct {
-	Data           map[int][]string
-	Indexes        map[int][]string
 	LevelsMax      []uint8
 	LevelsRequired []uint8
 }
 
-func makeLSM(max, req []uint8) *LSM {
+func NewLSM(max, req []uint8) *LSM {
 	l := LSM{}
-	l.Data = make(map[int][]string, 0)
-	l.Indexes = make(map[int][]string, 0)
 	l.LevelsMax = max
 	l.LevelsRequired = req
 	return &l
@@ -46,32 +44,51 @@ func DecodeLSM(path string) *LSM {
 	return &l
 }
 
+func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string) {
+	files, _ := ioutil.ReadDir("./res/")
+	currentData := make([]string, 0)
+	currentIndex := make([]string, 0)
+	currentSummary := make([]string, 0)
+	for _, entry := range files {
+		split := strings.Split(entry.Name(), "-")
+		intLevel, _ := strconv.Atoi(split[1])
+		if intLevel == level {
+			if strings.Contains(entry.Name(), "Index") {
+				currentIndex = append(currentIndex, entry.Name())
+			} else if strings.Contains(entry.Name(), "Summary") {
+				currentSummary = append(currentSummary, entry.Name())
+			} else {
+				currentData = append(currentData, entry.Name())
+			}
+		}
+	}
+	return currentData, currentIndex, currentSummary
+}
+
 func (l *LSM) Check() (bool, int) {
-	// LevelsMax and LevelsRequired are the same size
 	for i := range l.LevelsMax {
+		data, _, _ := l.GetDataIndexSummary(i + 1)
 		max := l.LevelsMax[i]
 		req := l.LevelsRequired[i]
-		data := uint8(len(l.Data[i]))
 		// If size of data reached max or required threshold
-		if data == max {
+		if len(data) == int(max) {
 			return true, i
-		} else if data >= req {
+		} else if len(data) >= int(req) {
 			return true, i
 		}
 	}
 	return false, 0
 }
 
-func (l *LSM) Insert(data, index string) {
-	l.Data[0] = append(l.Data[0], data)
-	l.Indexes[0] = append(l.Indexes[0], index)
-}
-
 // Compressing 2 SSTables
-func (l *LSM) Compress(dataFirst, dataSecond, indFirst, indSecond string) (string, string) {
+func (l *LSM) Compress(
+	dataFirst, dataSecond, indFirst, indSecond,
+	sumFirst, sumSecond string, level int) {
+
+	levelStr := strconv.Itoa(level)
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	tablePath := "res" + string(filepath.Separator) + nowStr + ".bin"
-	indexPath := "res" + string(filepath.Separator) + nowStr + "Index.bin"
+	tablePath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + ".bin"
+	indexPath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + "Index.bin"
 	table, _ := os.OpenFile(tablePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	index, _ := os.OpenFile(indexPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	indexFirst, _ := os.Open(indFirst)
@@ -121,13 +138,15 @@ func (l *LSM) Compress(dataFirst, dataSecond, indFirst, indSecond string) (strin
 		l.processEntry(entry, offset, table, index)
 	}
 	// Close and remove excess
+	GenerateSummary(index)
 	table.Close()
 	index.Close()
 	os.Remove(dataFirst)
 	os.Remove(dataSecond)
 	os.Remove(indFirst)
 	os.Remove(indSecond)
-	return tablePath, indexPath
+	os.Remove(sumFirst)
+	os.Remove(sumSecond)
 }
 
 func (l *LSM) processEntry(entry Entry, offset uint16, table, index *os.File) {
@@ -160,18 +179,18 @@ func (l *LSM) Run() {
 		if !ok {
 			break
 		}
+		data, index, summary := l.GetDataIndexSummary(level + 1)
 		for {
-			dataFirst, dataSecond := l.Data[level][0], l.Data[level][1]
-			indFirst, indSecond := l.Indexes[level][0], l.Indexes[level][1]
-			l.Data[level] = append(l.Data[level][2:])
-			l.Indexes[level] = append(l.Indexes[level][2:])
+			dataFirst, dataSecond := data[0], data[1]
+			indFirst, indSecond := index[0], index[1]
+			sumFirst, sumSecond := summary[0], summary[1]
+			data = append(data[2:])
+			index = append(index[2:])
+			summary = append(summary[2:])
 			// Compress and retreive dataPath, indexPath
-			data, index := l.Compress(dataFirst, dataSecond, indFirst, indSecond)
-			l.Data[level+1] = append(l.Data[level+1], data)
-			l.Indexes[level+1] = append(l.Indexes[level+1], index)
-			//TODO: Create summary
+			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, level)
 			// Exit condition (no more compacting on this level)
-			if len(l.Data[level]) <= 1 {
+			if len(data) <= 1 {
 				break
 			}
 		}

@@ -27,8 +27,10 @@ func (mt *Memtable) Delete(key string) {
 	mt.sl.Delete(key)
 }
 
-func (mt *Memtable) Set(key string, val []byte) {
+func (mt *Memtable) Set(key string, val []byte) bool {
+	flag := false
 	if mt.size+32+uint16(len(val)) >= mt.threshold {
+		flag = true
 		mt.flush()
 		sl := MakeSkipList()
 		*mt = Memtable{
@@ -39,11 +41,13 @@ func (mt *Memtable) Set(key string, val []byte) {
 	}
 	mt.size += 32 + uint16(len(val))
 	mt.sl.Set(key, val)
+	return flag
 }
 
 func (mt *Memtable) flush() {
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	fl, err := os.Create("res" + string(filepath.Separator) + nowStr + ".bin")
+	flPath := "res" + string(filepath.Separator) + "L-1-" + nowStr + ".bin"
+	fl, err := os.Create(flPath)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +56,8 @@ func (mt *Memtable) flush() {
 		panic(err)
 	}
 
-	indexF, err := os.Create("res" + string(filepath.Separator) + nowStr + "Index" + ".bin")
+	indexPath := "res" + string(filepath.Separator) + "L-1-" + nowStr + "Index" + ".bin"
+	indexF, err := os.Create(indexPath)
 	if err != nil {
 		panic(err)
 	}
@@ -227,13 +232,18 @@ func ReadData(name string) {
 	}
 }
 
-func Generate() {
+func NewMemTable() *Memtable {
 	sl := MakeSkipList()
 	mt := Memtable{
 		threshold: THRESHOLD,
 		size:      0,
 		sl:        &sl,
 	}
+	return &mt
+}
+
+func Generate() {
+	mt := NewMemTable()
 
 	mt.Set("29", []byte("thrth"))
 	mt.Set("21", []byte("dqwd"))

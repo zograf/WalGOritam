@@ -19,6 +19,8 @@ func help() {
 
 func main() {
 	src.TestCache()
+	// Engine initialization
+	engine := src.EngineInit()
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		fmt.Print("> ")
@@ -30,17 +32,17 @@ func main() {
 		tokens := strings.Split(text, " ")
 		if tokens[0] == "PUT" {
 			if len(tokens) == 3 {
-				src.EnginePut(tokens[1], tokens[2])
+				engine.EnginePut(tokens[1], tokens[2])
 				continue
 			}
 		} else if tokens[0] == "GET" {
 			if len(tokens) == 2 {
-				src.EngineGet(tokens[1])
+				engine.EngineGet(tokens[1])
 				continue
 			}
 		} else if tokens[0] == "DEL" {
 			if len(tokens) == 2 {
-				src.EngineDelete(tokens[1])
+				engine.EngineDelete(tokens[1])
 				continue
 			}
 		}
