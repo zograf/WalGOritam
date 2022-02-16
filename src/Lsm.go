@@ -50,6 +50,9 @@ func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string) {
 	currentIndex := make([]string, 0)
 	currentSummary := make([]string, 0)
 	for _, entry := range files {
+		if !strings.Contains(entry.Name(), "L-") {
+			continue
+		}
 		split := strings.Split(entry.Name(), "-")
 		intLevel, _ := strconv.Atoi(split[1])
 		if intLevel == level {
