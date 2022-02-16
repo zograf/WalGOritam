@@ -2,4 +2,3 @@
 idea/
 go.mod
 tests/*.txt
-wal/*
