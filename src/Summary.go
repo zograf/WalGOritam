@@ -11,6 +11,7 @@ const BLOCKSIZE = 16
 //write last then normal input
 func GenerateSummary(indexFile *os.File) {
 	name := strings.Replace(indexFile.Name(), "Index", "Summary", 1)
+	indexFile.Seek(0, 0)
 	iter := IndexIterator{indexFile}
 
 	var currentEntry *IndexEntry
@@ -28,22 +29,22 @@ func GenerateSummary(indexFile *os.File) {
 		i++
 	}
 
-	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_WRONLY, 777)
+	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0644)
 	defer summaryFile.Close()
 
-	var offset uint16
+	var offset uint32
 	offset = 0
 	last := sampleKeys[len(sampleKeys)-1]
 	WriteIndexRow([]byte(last.Key), last.KeySize, offset, summaryFile)
-	offset += uint16(last.KeySize) + 3
+	offset += uint32(last.KeySize) + 5
 
 	for _, key := range sampleKeys {
 		WriteIndexRow([]byte(key.Key), key.KeySize, offset, summaryFile)
-		offset += uint16(last.KeySize) + 3
+		offset += uint32(last.KeySize) + 5
 	}
 
 }
-func Search(key string, summaryFile *os.File) (uint16, error) {
+func Search(key string, summaryFile *os.File) (uint32, error) {
 	iter := IndexIterator{summaryFile}
 	last := iter.GetNext()
 	first := iter.GetNext()
