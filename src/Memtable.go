@@ -235,7 +235,7 @@ func ReadData(name string) {
 func NewMemTable() *Memtable {
 	sl := MakeSkipList()
 	mt := Memtable{
-		threshold: THRESHOLD,
+		threshold: uint16(Config.MemtableThreshold),
 		size:      0,
 		sl:        &sl,
 	}

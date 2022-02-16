@@ -34,6 +34,7 @@ func (engine *Engine) EngineDelete(key string) {
 }
 
 func EngineInit() *Engine {
+
 	engine := Engine{}
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()

@@ -28,9 +28,9 @@ type Wal struct {
 }
 
 func NewWal() *Wal {
-	threshold := THRESHOLD_DEFAULT
-	entriesPerFile := ENTRIES_PER_FILE_DEFAULT
-	lowWatermark := LOW_WATERMARK
+	//threshold := THRESHOLD_DEFAULT
+	//entriesPerFile := ENTRIES_PER_FILE_DEFAULT
+	//lowWatermark := LOW_WATERMARK
 	path := PATH
 
 	//TODO read config
@@ -49,11 +49,11 @@ func NewWal() *Wal {
 
 	return &Wal{
 		WalBuffer:      make([]*WalEntry, 0),
-		threshold:      int32(threshold),
+		threshold:      int32(Config.WalThreshold),
 		currentFile:    int32(currentFile),
-		entriesPerFile: int32(entriesPerFile),
+		entriesPerFile: int32(Config.WalThreshold),
 		inCurrentFile:  0,
-		lowWatermark:   lowWatermark,
+		lowWatermark:   Config.WalLowWatermark,
 		path:           path,
 	}
 
