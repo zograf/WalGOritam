@@ -81,7 +81,7 @@ func (wal *Wal) deleteSegments() {
 		for ; i < fileCount; i++ {
 			os.Rename(wal.path+strconv.Itoa(i)+".gob",
 				wal.path+strconv.Itoa(i-(fileCount-wal.lowWatermark))+".gob")
-			fmt.Println(i - (fileCount - wal.lowWatermark))
+			//fmt.Println(i - (fileCount - wal.lowWatermark))
 		}
 	}
 
@@ -110,7 +110,7 @@ func (wal *Wal) dump() bool {
 
 func appendToFile(file *os.File, data []byte) error {
 
-	fmt.Println(data)
+	//fmt.Println(data)
 	file.Seek(0, 2)
 	file.Write(data)
 
@@ -181,7 +181,7 @@ func readRange(file *os.File, startIndex, endIndex int) ([]byte, error) {
 	}
 
 	result := make([]byte, endIndex-startIndex)
-	fmt.Println(endIndex - startIndex)
+	//fmt.Println(endIndex - startIndex)
 	_, err := io.ReadFull(file, result)
 	if err != nil {
 		return nil, err

@@ -2,13 +2,12 @@ package src
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 )
 
-func WriteIndexRow(key []byte, keySize uint8, offset uint16, indexF *os.File) {
+func WriteIndexRow(key []byte, keySize uint8, offset uint32, indexF *os.File) {
 	err := binary.Write(indexF, binary.LittleEndian, keySize)
 	if err != nil {
 		panic(err)
@@ -27,10 +26,9 @@ func WriteIndexRow(key []byte, keySize uint8, offset uint16, indexF *os.File) {
 
 type IndexEntry struct {
 	KeySize uint8
-	Key string
-	Offset uint16
+	Key     string
+	Offset  uint32
 }
-
 
 type IndexIterator struct {
 	file *os.File
@@ -60,8 +58,8 @@ func (mti *IndexIterator) GetNext() *IndexEntry {
 			panic(err)
 		}
 		KeySize := temp[0]
-		fmt.Println("Key size")
-		fmt.Println(KeySize)
+		//fmt.Println("Key size")
+		//fmt.Println(KeySize)
 
 		data1 := make([]byte, KeySize)
 		_, err = mti.file.Read(data1)
@@ -69,18 +67,18 @@ func (mti *IndexIterator) GetNext() *IndexEntry {
 			panic(err)
 		}
 		Key := string(data1[:])
-		fmt.Println("key")
-		fmt.Println(Key)
+		//fmt.Println("key")
+		//fmt.Println(Key)
 
-		data2 := make([]byte, 2)
+		data2 := make([]byte, 4)
 		_, err = mti.file.Read(data2)
 		if err != nil {
 			panic(err)
 		}
-		Offset := binary.LittleEndian.Uint16(data2)
-		fmt.Println("Offset")
-		fmt.Println(Offset)
-		fmt.Println("-------------------------------------------")
+		Offset := binary.LittleEndian.Uint32(data2)
+		//fmt.Println("Offset")
+		//fmt.Println(Offset)
+		//fmt.Println("-------------------------------------------")
 		return &IndexEntry{
 			KeySize: KeySize,
 			Key:     Key,
@@ -95,7 +93,7 @@ func ReadIndex(name string) {
 	defer fl.Close()
 
 	it := IndexIterator{file: fl}
-	for it.HasNext(){
+	for it.HasNext() {
 		it.GetNext()
 	}
 }

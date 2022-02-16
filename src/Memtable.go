@@ -77,7 +77,7 @@ func (mt *Memtable) flush() {
 	var key []byte
 	var KeySize uint8
 	var value []byte
-	var offset uint16
+	var offset uint32
 
 	indexEntryCount := 0
 	for iterator.HasNext() {
@@ -91,7 +91,7 @@ func (mt *Memtable) flush() {
 		KeySize = uint8(binary.Size(key))
 		value = skipNode.Value
 		temp, _ := fl.Seek(0, io.SeekCurrent)
-		offset = uint16(temp)
+		offset = uint32(temp)
 
 		// CRC 4 bajta
 		binary.Write(fl, binary.LittleEndian, CRC)
@@ -127,7 +127,7 @@ type Entry struct {
 	value     []byte
 }
 
-func ReadDataRow(name string, offset uint16) Entry {
+func ReadDataRow(name string, offset uint32) Entry {
 	var CRC uint32
 	var Timestamp uint64
 	var Tombstone byte
@@ -153,8 +153,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 		panic(err)
 	}
 	CRC = binary.LittleEndian.Uint32(data1)
-	fmt.Println("CRC:")
-	fmt.Println(CRC)
+	//fmt.Println("CRC:")
+	//fmt.Println(CRC)
 
 	data2 := make([]byte, 8)
 	_, err = file.Read(data2)
@@ -162,8 +162,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 		panic(err)
 	}
 	Timestamp = binary.LittleEndian.Uint64(data2)
-	fmt.Println("timestamp:")
-	fmt.Println(int64(Timestamp))
+	//fmt.Println("timestamp:")
+	//fmt.Println(int64(Timestamp))
 
 	data3 := make([]byte, 1)
 	_, err = file.Read(data3)
@@ -171,8 +171,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 		panic(err)
 	}
 	Tombstone = data3[0]
-	fmt.Println("tombstone:")
-	fmt.Println(Tombstone)
+	//fmt.Println("tombstone:")
+	//fmt.Println(Tombstone)
 
 	data4 := make([]byte, 1)
 	_, err = file.Read(data4)
@@ -181,8 +181,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 	}
 
 	KeySize = data4[0]
-	fmt.Println("Key size")
-	fmt.Println(KeySize)
+	//fmt.Println("Key size")
+	//fmt.Println(KeySize)
 
 	data5 := make([]byte, 1)
 	_, err = file.Read(data5)
@@ -190,8 +190,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 		panic(err)
 	}
 	ValueSize = data5[0]
-	fmt.Println("Value size")
-	fmt.Println(ValueSize)
+	//fmt.Println("Value size")
+	//fmt.Println(ValueSize)
 
 	data6 := make([]byte, KeySize)
 	_, err = file.Read(data6)
@@ -200,8 +200,8 @@ func ReadDataRow(name string, offset uint16) Entry {
 	}
 
 	Key = string(data6[:])
-	fmt.Println("key")
-	fmt.Println(Key)
+	//fmt.Println("key")
+	//fmt.Println(Key)
 
 	data7 := make([]byte, ValueSize)
 	_, err = file.Read(data7)
@@ -210,10 +210,10 @@ func ReadDataRow(name string, offset uint16) Entry {
 	}
 
 	value = data7
-	fmt.Println("val:")
-	fmt.Println(string(data7))
+	//fmt.Println("val:")
+	//fmt.Println(string(data7))
 
-	fmt.Println("--------------------------------")
+	//fmt.Println("--------------------------------")
 	return Entry{
 		CRC:       CRC,
 		Timestamp: Timestamp,

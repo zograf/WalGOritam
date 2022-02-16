@@ -38,7 +38,7 @@ func EngineInit() *Engine {
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()
 	engine.wal = NewWal()
-	max := []uint8{5, 5, 5}
+	max := []uint8{6, 6, 6}
 	req := []uint8{2, 2, 2}
 	engine.lsm = NewLSM(max, req)
 	return &engine

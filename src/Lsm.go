@@ -89,16 +89,17 @@ func (l *LSM) Compress(
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
 	tablePath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + ".bin"
 	indexPath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + "Index.bin"
-	table, _ := os.OpenFile(tablePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	index, _ := os.OpenFile(indexPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	indexFirst, _ := os.Open(indFirst)
-	indexSecond, _ := os.Open(indSecond)
+	table, _ := os.OpenFile(tablePath, os.O_CREATE|os.O_RDWR, 0644)
+	index, _ := os.OpenFile(indexPath, os.O_CREATE|os.O_RDWR, 0644)
+	indexFirst, _ := os.Open("res" + string(filepath.Separator) + indFirst)
+	indexSecond, _ := os.Open("res" + string(filepath.Separator) + indSecond)
+	indexFirst.Seek(0, 0)
+	indexSecond.Seek(0, 0)
 	itFirst := IndexIterator{file: indexFirst}
 	itSecond := IndexIterator{file: indexSecond}
 	first := itFirst.GetNext()
 	second := itSecond.GetNext()
 	var entry Entry
-	var offset uint16
 	for {
 		if !itFirst.HasNext() || !itSecond.HasNext() {
 			break
@@ -110,51 +111,63 @@ func (l *LSM) Compress(
 			// Choose larger
 			if firstEntry.Timestamp > secondEntry.Timestamp {
 				entry = firstEntry
-				offset = first.Offset
 			} else {
 				entry = secondEntry
-				offset = first.Offset
 			}
+			first = itFirst.GetNext()
+			second = itSecond.GetNext()
 		} else if first.Key < second.Key {
 			entry = firstEntry
-			offset = first.Offset
+			first = itFirst.GetNext()
 		} else {
 			entry = secondEntry
-			offset = second.Offset
+			second = itSecond.GetNext()
 		}
-		l.processEntry(entry, offset, table, index)
+		l.processEntry(entry, table, index)
 	}
 	// If first one ran out
-	it := itFirst
-	data := dataFirst
-	if !itFirst.HasNext() {
-		it = itSecond
-		data = dataSecond
+	if !itFirst.HasNext() && itSecond.HasNext() {
+		// First remained
+		entry = ReadDataRow(dataFirst, first.Offset)
+		l.processEntry(entry, table, index)
+		for itSecond.HasNext() {
+			itEntry := itSecond.GetNext()
+			entry = ReadDataRow(dataSecond, itEntry.Offset)
+			l.processEntry(entry, table, index)
+		}
+	} else if !itSecond.HasNext() && itFirst.HasNext() {
+		// Second remained
+		entry = ReadDataRow(dataSecond, second.Offset)
+		l.processEntry(entry, table, index)
+		for itFirst.HasNext() {
+			itEntry := itFirst.GetNext()
+			entry = ReadDataRow(dataFirst, itEntry.Offset)
+			l.processEntry(entry, table, index)
+		}
+	} else {
+		entry = ReadDataRow(dataFirst, first.Offset)
+		l.processEntry(entry, table, index)
+		entry = ReadDataRow(dataSecond, second.Offset)
+		l.processEntry(entry, table, index)
 	}
-	for it.HasNext() {
-		itEntry := it.GetNext()
-		entry := ReadDataRow(data, itEntry.Offset)
-		offset := itEntry.Offset
-		l.processEntry(entry, offset, table, index)
-	}
-	// Close and remove excess
 	GenerateSummary(index)
+	// Close and remove excess
 	table.Close()
 	index.Close()
-	os.Remove(dataFirst)
-	os.Remove(dataSecond)
-	os.Remove(indFirst)
-	os.Remove(indSecond)
-	os.Remove(sumFirst)
-	os.Remove(sumSecond)
+	os.Remove("res" + string(filepath.Separator) + dataFirst)
+	os.Remove("res" + string(filepath.Separator) + dataSecond)
+	os.Remove("res" + string(filepath.Separator) + indFirst)
+	os.Remove("res" + string(filepath.Separator) + indSecond)
+	os.Remove("res" + string(filepath.Separator) + sumFirst)
+	os.Remove("res" + string(filepath.Separator) + sumSecond)
 }
 
-func (l *LSM) processEntry(entry Entry, offset uint16, table, index *os.File) {
+func (l *LSM) processEntry(entry Entry, table, index *os.File) {
 	// If it's deleted
 	if entry.Tombstone == 1 {
 		return
 	}
-	table.Seek(0, io.SeekEnd)
+	temp, _ := table.Seek(0, io.SeekCurrent)
 	// CRC 4 bajta
 	binary.Write(table, binary.LittleEndian, entry.CRC)
 	// Timestamp 64 bajta
@@ -170,6 +183,7 @@ func (l *LSM) processEntry(entry Entry, offset uint16, table, index *os.File) {
 	//	Value ValueSize bajta
 	binary.Write(table, binary.LittleEndian, entry.value)
 
+	offset := uint32(temp)
 	WriteIndexRow([]byte(entry.key), entry.KeySize, offset, index)
 }
 
@@ -184,11 +198,11 @@ func (l *LSM) Run() {
 			dataFirst, dataSecond := data[0], data[1]
 			indFirst, indSecond := index[0], index[1]
 			sumFirst, sumSecond := summary[0], summary[1]
-			data = append(data[2:])
-			index = append(index[2:])
-			summary = append(summary[2:])
+			data = data[2:]
+			index = index[2:]
+			summary = summary[2:]
 			// Compress and retreive dataPath, indexPath
-			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, level)
+			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, level+2)
 			// Exit condition (no more compacting on this level)
 			if len(data) <= 1 {
 				break
