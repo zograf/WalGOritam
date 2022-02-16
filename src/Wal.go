@@ -74,15 +74,30 @@ func (wal *Wal) deleteSegments() {
 	fileCount := len(files)
 
 	if fileCount > wal.lowWatermark {
+		for _, file := range files {
+			os.Remove("wal/" + file.Name())
+			fileCount--
+			if fileCount == wal.lowWatermark {
+				break
+			}
+		}
+		files, _ = ioutil.ReadDir("wal/")
+
 		i := 0
-		for i = 0; i < fileCount-wal.lowWatermark; i++ {
-			os.Remove(wal.path + strconv.Itoa(i) + ".gob")
+		for _, file := range files {
+			os.Rename("wal/"+file.Name(), wal.path+strconv.Itoa(i)+".gob")
+			i++
 		}
-		for ; i < fileCount; i++ {
-			os.Rename(wal.path+strconv.Itoa(i)+".gob",
-				wal.path+strconv.Itoa(i-(fileCount-wal.lowWatermark))+".gob")
-			//fmt.Println(i - (fileCount - wal.lowWatermark))
-		}
+		//i := 0
+		//for i = 0; i < fileCount-wal.lowWatermark; i++ {
+		//	os.Remove(files[i].Name())
+		//
+		//}
+		//for ; i < fileCount; i++ {
+		//	os.Rename(files[i].Name(),
+		//		wal.path+strconv.Itoa(i-(fileCount-wal.lowWatermark))+".gob")
+		//	//fmt.Println(i - (fileCount - wal.lowWatermark))
+		//}
 	}
 
 }
