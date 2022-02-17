@@ -3,3 +3,15 @@ walEntriesPerFile: 10
 walLowWatermark: 5
 memtableThreshold: 10000
 cacheSize: 100
+tokenBucketInterval: 60
+tokenBucketMax: 1000
+hllMinPrecision: 4
+hllMaxPrecision: 16
+hllP: 4
+cmsEpsilon: 0.01
+cmsDelta: 0.01
+bloomFilterExpectedElementsL1: 512
+bloomFilterExpectedElementsL2: 1024
+bloomFilterExpectedElementsL3: 2048
+bloomFilterExpectedElementsL4: 4096
+bloomFilterFalsePositive: 0.02

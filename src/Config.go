@@ -7,11 +7,24 @@ import (
 )
 
 type Conf struct {
-	WalThreshold      int    `yaml:"walThreshold"`
-	WalEntriesPerFile int    `yaml:"walEntriesPerFile"`
-	WalLowWatermark   int    `yaml:"walLowWatermark"`
-	MemtableThreshold uint16 `yaml:"memtableThreshold"`
-	CacheSize         int    `yaml:"cacheSize"`
+	WalThreshold                  int     `yaml:"walThreshold"`
+	WalEntriesPerFile             int     `yaml:"walEntriesPerFile"`
+	WalLowWatermark               int     `yaml:"walLowWatermark"`
+	MemtableThreshold             uint16  `yaml:"memtableThreshold"`
+	CacheSize                     int     `yaml:"cacheSize"`
+	TokenBucketInterval           int64   `yaml:"tokenBucketInterval"`
+	TokenBucketMax                int64   `yaml:"tokenBucketMax"`
+	HllMinPrecision               int     `yaml:"hllMinPrecision"`
+	HllMaxPrecision               int     `yaml:"hllMaxPrecision"`
+	HllP                          int     `yaml:"hllP"`
+	CmsEpsilon                    float32 `yaml:"cmsEpsilon"`
+	CmsDelta                      float32 `yaml:"cmsDelta"`
+	BloomFilterExpectedElementsL1 int     `yaml:"bloomFilterExpectedElementsL1"`
+	BloomFilterExpectedElementsL2 int     `yaml:"bloomFilterExpectedElementsL2"`
+	BloomFilterExpectedElementsL3 int     `yaml:"bloomFilterExpectedElementsL3"`
+	BloomFilterExpectedElementsL4 int     `yaml:"bloomFilterExpectedElementsL4"`
+	BloomFilterFalsePositive      float32 `yaml:"bloomFilterFalsePositive"`
+	//QueueSize                     int     `yaml:"queueSize"`
 }
 
 type Selected struct {
