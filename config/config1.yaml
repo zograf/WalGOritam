@@ -1,0 +1,5 @@
+walThreshold: 1
+walEntriesPerFile: 5
+walLowWatermark: 4
+memtableThreshold: 10000
+cacheSize: 100

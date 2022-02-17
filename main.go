@@ -39,6 +39,7 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
+	src.NewConf()
 	fileFlag := true
 	src.TestCache()
 	// Engine initialization

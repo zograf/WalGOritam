@@ -14,7 +14,28 @@ type Conf struct {
 	CacheSize         int    `yaml:"cacheSize"`
 }
 
-func NewConf(path string) Conf {
+type Selected struct {
+	Selected string `yaml:"selected"`
+}
+
+func NewConf() {
+	path := "config/"
+
+	s := &Selected{}
+	yamlFile, err := ioutil.ReadFile(path + "selected.yaml")
+	if err != nil {
+		log.Printf("yamlFile.Get err   #%v ", err)
+	}
+	err = yaml.Unmarshal(yamlFile, s)
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+	c := generateConf(path + "config" + s.Selected + ".yaml")
+
+	Config = c
+}
+
+func generateConf(path string) Conf {
 
 	c := &Conf{}
 	yamlFile, err := ioutil.ReadFile(path)
@@ -29,4 +50,4 @@ func NewConf(path string) Conf {
 	return *c
 }
 
-var Config Conf = NewConf("config/config00.yaml")
+var Config Conf
