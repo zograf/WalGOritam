@@ -42,6 +42,8 @@ func GenerateSummary(indexFile *os.File) {
 		WriteIndexRow([]byte(key.Key), key.KeySize, offset, summaryFile)
 		offset += uint32(last.KeySize) + 5
 	}
+	nowStr := strings.Replace(indexFile.Name(), "Index", "", 1)
+	FormToc(nowStr)
 
 }
 func Search(key string, summaryFile *os.File) (uint32, error) {
