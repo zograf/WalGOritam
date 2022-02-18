@@ -1,6 +1,7 @@
 package src
 
 import (
+	"bufio"
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
@@ -46,7 +47,7 @@ func (mt *Memtable) Set(key string, val []byte) bool {
 
 func (mt *Memtable) flush() {
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	flPath := "res" + string(filepath.Separator) + "L-1-" + nowStr + ".bin"
+	flPath := "res" + string(filepath.Separator) + "L-1-" + nowStr + "Data.bin"
 	fl, err := os.Create(flPath)
 	if err != nil {
 		panic(err)
@@ -112,7 +113,36 @@ func (mt *Memtable) flush() {
 		indexEntryCount++
 	}
 	GenerateSummary(indexF)
+	FormToc(nowStr)
 }
+
+func FormToc(nowStr string){
+	filePath := "res" + string(filepath.Separator) + "L-1-" + nowStr
+	file, err := os.Create(filePath + "TOC.txt")
+	if err != nil {
+		panic(err)
+	}
+	writer := bufio.NewWriter(file)
+	_, err = writer.WriteString(filePath + "Data.bin\n")
+	if err != nil {
+		panic(err)
+	}
+	_, err = writer.WriteString(filePath + "Index.bin\n")
+	if err != nil {
+		panic(err)
+	}
+	_, err = writer.WriteString(filePath + "Summary.bin\n")
+	if err != nil {
+		panic(err)
+	}
+	_, err = writer.WriteString(filePath + "Filter.gob\n")
+	if err != nil {
+		panic(err)
+	}
+
+
+}
+
 func CRC32(data []byte) uint32 {
 	return crc32.ChecksumIEEE(data)
 }
