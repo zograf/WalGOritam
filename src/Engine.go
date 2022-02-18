@@ -56,7 +56,10 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	var indexEntry *IndexEntry
 	var dataEntry Entry
 	var filter *BloomFilter
-	for level := 1; level < Config.LsmMaxLevels; level++ {
+	var biggestTimestampEntry Entry
+	found = false
+
+	for level := 1; level < Config.LsmMaxLevels; level++{
 		currentData, currentIndex, currentSummary, currentFilter, _, _ = engine.lsm.GetDataIndexSummary(level)
 		for j := 0; j < len(currentData); j++ {
 			filter = DecodeBloomFilter("res" + string(os.PathSeparator) + currentFilter[j])
@@ -77,11 +80,20 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 				return nil, false
 			}
 			engine.cache.Put(key, val)
-			return dataEntry.value, true
+			if dataEntry.Timestamp > biggestTimestampEntry.Timestamp{
+				biggestTimestampEntry = dataEntry
+			}
 
 		}
 	}
-	return nil, false
+	if found{
+		if biggestTimestampEntry.Tombstone == 1{
+			return nil, false
+		}else{
+			return biggestTimestampEntry.value, true
+		}
+	}
+	return nil, found
 
 }
 
