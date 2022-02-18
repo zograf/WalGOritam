@@ -21,7 +21,7 @@ type Conf struct {
 	CmsDelta                      float32 `yaml:"cmsDelta"`
 	BloomFilterExpectedElementsL1 []int   `yaml:"bloomFilterExpectedElements"`
 	BloomFilterFalsePositive      float64 `yaml:"bloomFilterFalsePositive"`
-	//QueueSize                     int     `yaml:"queueSize"`
+	LsmMaxLevels                     int     `yaml:"lsmMaxLevels"`
 }
 
 type Selected struct {

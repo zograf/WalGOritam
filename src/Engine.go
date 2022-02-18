@@ -10,6 +10,7 @@ type Engine struct {
 	wal         *Wal
 	memTable    *Memtable
 	lsm         *LSM
+	cache 		*Cache
 }
 
 func (engine *Engine) EnginePut(key, value string) {
@@ -32,8 +33,33 @@ func (engine *Engine) EnginePut(key, value string) {
 	fmt.Println("SUCCESS! Key-Value pair { " + key + " : " + value + " }")
 }
 
-func (engine *Engine) EngineGet(key string) {
+func (engine *Engine) EngineGet(key string) []byte{
 	fmt.Println("GET")
+	val := engine.memTable.Get(key)
+	if val != nil{
+		return val
+	}
+	val = engine.cache.Search(key)
+	if val != nil{
+		engine.cache.Put(key, val)
+		return val
+	}
+	var currentData []string
+	var currentIndex []string
+	var currentSummary []string
+	var currentFilter []string
+	var currentToc []string
+	var currentMetadata []string
+	fmt.Println(currentData, currentIndex, currentSummary, currentFilter, currentToc, currentMetadata)
+	//filesByLevels := make([][]string, Config.LsmMaxLevels)
+	var level int
+	fmt.Println(level)
+	for i := 1; i < Config.LsmMaxLevels; i++{
+		currentData, currentIndex, currentSummary, currentFilter, currentToc, currentMetadata = engine.lsm.GetDataIndexSummary(i)
+
+	}
+	return nil
+
 }
 
 func (engine *Engine) EngineDelete(key string) {
