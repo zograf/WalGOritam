@@ -1,8 +1,10 @@
 package src
 
 import (
+	"bufio"
 	"encoding/binary"
 	"encoding/gob"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -44,33 +46,41 @@ func DecodeLSM(path string) *LSM {
 	return &l
 }
 
-func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string) {
-	files, _ := ioutil.ReadDir("./res/")
+func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []string) {
+	files, _ := ioutil.ReadDir("res")
 	currentData := make([]string, 0)
 	currentIndex := make([]string, 0)
 	currentSummary := make([]string, 0)
+	currentFilter := make([]string, 0)
 	for _, entry := range files {
-		if !strings.Contains(entry.Name(), "L-") {
-			continue
-		}
-		split := strings.Split(entry.Name(), "-")
-		intLevel, _ := strconv.Atoi(split[1])
-		if intLevel == level {
-			if strings.Contains(entry.Name(), "Index") {
-				currentIndex = append(currentIndex, entry.Name())
-			} else if strings.Contains(entry.Name(), "Summary") {
-				currentSummary = append(currentSummary, entry.Name())
-			} else {
-				currentData = append(currentData, entry.Name())
+		if strings.Contains(entry.Name(), "TOC") {
+			tokens := strings.Split(entry.Name(), "-")
+			if tokens[1] != strconv.Itoa(level) {
+				continue
 			}
+			f, _ := os.Open("res" + string(filepath.Separator) + entry.Name())
+			scanner := bufio.NewScanner(f)
+			scanner.Scan()
+			data := scanner.Text()
+			scanner.Scan()
+			index := scanner.Text()
+			scanner.Scan()
+			summary := scanner.Text()
+			scanner.Scan()
+			filter := scanner.Text()
+			currentData = append(currentData, data)
+			currentIndex = append(currentIndex, index)
+			currentSummary = append(currentSummary, summary)
+			currentFilter = append(currentFilter, filter)
+			f.Close()
 		}
 	}
-	return currentData, currentIndex, currentSummary
+	return currentData, currentIndex, currentSummary, currentFilter
 }
 
 func (l *LSM) Check() (bool, int) {
 	for i := range l.LevelsMax {
-		data, _, _ := l.GetDataIndexSummary(i + 1)
+		data, _, _, _ := l.GetDataIndexSummary(i + 1)
 		max := l.LevelsMax[i]
 		req := l.LevelsRequired[i]
 		// If size of data reached max or required threshold
@@ -86,7 +96,7 @@ func (l *LSM) Check() (bool, int) {
 // Compressing 2 SSTables
 func (l *LSM) Compress(
 	dataFirst, dataSecond, indFirst, indSecond,
-	sumFirst, sumSecond string, level int) {
+	sumFirst, sumSecond, filFirst, filSecond string, level int) {
 
 	levelStr := strconv.Itoa(level)
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
@@ -100,58 +110,12 @@ func (l *LSM) Compress(
 	indexSecond.Seek(0, 0)
 	itFirst := IndexIterator{file: indexFirst}
 	itSecond := IndexIterator{file: indexSecond}
-	first := itFirst.GetNext()
-	second := itSecond.GetNext()
-	var entry Entry
 	for {
-		if !itFirst.HasNext() || !itSecond.HasNext() {
+		entry, err := l.getNext(&itFirst, &itSecond, dataFirst, dataSecond)
+		if err != nil {
 			break
 		}
-		// Check timestamps
-		firstEntry := ReadDataRow(dataFirst, first.Offset)
-		secondEntry := ReadDataRow(dataSecond, second.Offset)
-		if first.Key == second.Key {
-			// Choose larger
-			if firstEntry.Timestamp > secondEntry.Timestamp {
-				entry = firstEntry
-			} else {
-				entry = secondEntry
-			}
-			first = itFirst.GetNext()
-			second = itSecond.GetNext()
-		} else if first.Key < second.Key {
-			entry = firstEntry
-			first = itFirst.GetNext()
-		} else {
-			entry = secondEntry
-			second = itSecond.GetNext()
-		}
-		l.processEntry(entry, table, index)
-	}
-	// If first one ran out
-	if !itFirst.HasNext() && itSecond.HasNext() {
-		// First remained
-		entry = ReadDataRow(dataFirst, first.Offset)
-		l.processEntry(entry, table, index)
-		for itSecond.HasNext() {
-			itEntry := itSecond.GetNext()
-			entry = ReadDataRow(dataSecond, itEntry.Offset)
-			l.processEntry(entry, table, index)
-		}
-	} else if !itSecond.HasNext() && itFirst.HasNext() {
-		// Second remained
-		entry = ReadDataRow(dataSecond, second.Offset)
-		l.processEntry(entry, table, index)
-		for itFirst.HasNext() {
-			itEntry := itFirst.GetNext()
-			entry = ReadDataRow(dataFirst, itEntry.Offset)
-			l.processEntry(entry, table, index)
-		}
-	} else {
-		entry = ReadDataRow(dataFirst, first.Offset)
-		l.processEntry(entry, table, index)
-		entry = ReadDataRow(dataSecond, second.Offset)
-		l.processEntry(entry, table, index)
+		l.processEntry(*entry, table, index)
 	}
 	GenerateSummary(index)
 	// Close and remove excess
@@ -163,6 +127,8 @@ func (l *LSM) Compress(
 	os.Remove("res" + string(filepath.Separator) + indSecond)
 	os.Remove("res" + string(filepath.Separator) + sumFirst)
 	os.Remove("res" + string(filepath.Separator) + sumSecond)
+	os.Remove("res" + string(filepath.Separator) + filFirst)
+	os.Remove("res" + string(filepath.Separator) + filSecond)
 }
 
 func (l *LSM) processEntry(entry Entry, table, index *os.File) {
@@ -190,22 +156,63 @@ func (l *LSM) processEntry(entry Entry, table, index *os.File) {
 	WriteIndexRow([]byte(entry.key), entry.KeySize, offset, index)
 }
 
+func (l *LSM) getNext(first, second *IndexIterator, dataFirst, dataSecond string) (*Entry, error) {
+	if !first.HasNext() && !second.HasNext() {
+		return nil, errors.New("Iterators have no more values")
+	}
+	if !first.HasNext() {
+		temp := second.GetNext()
+		entry := ReadDataRow(dataSecond, temp.Offset)
+		return &entry, nil
+	} else if !second.HasNext() {
+		temp := first.GetNext()
+		entry := ReadDataRow(dataFirst, temp.Offset)
+		return &entry, nil
+	} else {
+		a := first.PeekNext()
+		b := second.PeekNext()
+		aEntry := ReadDataRow(dataFirst, a.Offset)
+		bEntry := ReadDataRow(dataSecond, b.Offset)
+		if aEntry.key == bEntry.key {
+			if aEntry.Timestamp < bEntry.Timestamp {
+				temp := first.GetNext()
+				entry := ReadDataRow(dataFirst, temp.Offset)
+				return &entry, nil
+			} else {
+				temp := second.GetNext()
+				entry := ReadDataRow(dataSecond, temp.Offset)
+				return &entry, nil
+			}
+		} else if a.Key < b.Key {
+			temp := first.GetNext()
+			entry := ReadDataRow(dataFirst, temp.Offset)
+			return &entry, nil
+		} else {
+			temp := second.PeekNext()
+			entry := ReadDataRow(dataSecond, temp.Offset)
+			return &entry, nil
+		}
+	}
+}
+
 func (l *LSM) Run() {
 	for {
 		ok, level := l.Check()
 		if !ok {
 			break
 		}
-		data, index, summary := l.GetDataIndexSummary(level + 1)
+		data, index, summary, filter := l.GetDataIndexSummary(level + 1)
 		for {
 			dataFirst, dataSecond := data[0], data[1]
 			indFirst, indSecond := index[0], index[1]
 			sumFirst, sumSecond := summary[0], summary[1]
+			filFirst, filSecond := filter[0], filter[1]
 			data = data[2:]
 			index = index[2:]
 			summary = summary[2:]
+			filter = filter[2:]
 			// Compress and retreive dataPath, indexPath
-			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, level+2)
+			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, filFirst, filSecond, level+2)
 			// Exit condition (no more compacting on this level)
 			if len(data) <= 1 {
 				break
