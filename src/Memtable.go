@@ -30,7 +30,7 @@ func (mt *Memtable) Delete(key string) {
 
 func (mt *Memtable) Set(key string, val []byte) bool {
 	flag := false
-	if mt.size+32+uint16(len(val)) >= mt.threshold {
+	if mt.size+uint16(binary.Size(key))+uint16(len(val)) >= mt.threshold {
 		flag = true
 		mt.flush()
 		sl := MakeSkipList()
