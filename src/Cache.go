@@ -39,6 +39,14 @@ func (cache *Cache) Put(key string, value []byte) {
 	}
 	cache.lruMap[key] = newNode
 }
+func (cache *Cache) DeleteElement(key string) {
+	node, found := cache.lruMap[key]
+	if found {
+		node.previous.next = node.next
+		node.next.previous = node.previous
+	}
+
+}
 
 func TestCache() {
 	cache := NewCache(10)

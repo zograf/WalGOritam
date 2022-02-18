@@ -71,6 +71,13 @@ func (wal *Wal) put(s string, data []byte) {
 	wal.WalBuffer = append(wal.WalBuffer, newEntry)
 }
 
+func (wal *Wal) delete(s string) {
+	newEntry := newWalEntry()
+	newEntry.Tombstone = 1
+	newEntry.put(s, nil)
+	wal.WalBuffer = append(wal.WalBuffer, newEntry)
+}
+
 func (wal *Wal) deleteSegments() {
 	files, _ := ioutil.ReadDir(DIR)
 	fileCount := len(files)
