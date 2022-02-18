@@ -94,8 +94,9 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	return MerkleTree{root: parentNodes[0]}
 }
 
-func (merkle *MerkleTree) WriteMetadata(fileName string){
-	file, err := os.Create(fileName)
+func (merkle *MerkleTree) WriteMetadata(filePath string){
+	file, err := os.Create(filePath)
+	defer file.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -107,18 +108,23 @@ func (merkle *MerkleTree) WriteMetadata(fileName string){
 	var currentNode *Node
 	//fmt.Println(currentNode)
 	queue.Enqueue(merkle.root)
+	//queue.Enqueue(nil)
 	var numOfWritten int
-	for queue.size > 1{
+	for !queue.IsEmpty(){
 		currentNode = queue.Dequeue()
-		numOfWritten, err = file.WriteString(base64.URLEncoding.EncodeToString(currentNode.hash))
 		fmt.Println(numOfWritten)
 		if err != nil {
 			panic(err)
 		}
 		if currentNode != nil{
-			queue.Enqueue(currentNode.left)
-			queue.Enqueue(currentNode.right)
+			if currentNode.left != nil {
+				queue.Enqueue(currentNode.left)
+			}
+			if currentNode.right != nil {
+				queue.Enqueue(currentNode.right)
+			}
 		}
+		numOfWritten, err = file.WriteString(base64.URLEncoding.EncodeToString(currentNode.hash) + "\n")
 	}
 }
 
