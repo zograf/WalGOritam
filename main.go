@@ -42,7 +42,7 @@ func fileTest(path string, engine *src.Engine) {
 
 func main() {
 	src.NewConf()
-	fileFlag := true
+	fileFlag := false
 	src.TestCache()
 	// Engine initialization
 	engine := src.EngineInit()
@@ -66,7 +66,8 @@ func main() {
 				}
 			} else if tokens[0] == "GET" {
 				if len(tokens) == 2 {
-					engine.EngineGet(tokens[1])
+					val, found := engine.EngineGet(tokens[1])
+					fmt.Println("VALUE: ", val, "\tFOUND: ", found)
 					continue
 				}
 			} else if tokens[0] == "DEL" {

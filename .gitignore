@@ -3,3 +3,4 @@ idea/
 go.mod
 tests/*.txt
 wal/*.gob
+res/

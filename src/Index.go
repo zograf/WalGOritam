@@ -83,6 +83,47 @@ func (mti *IndexIterator) GetNext() *IndexEntry {
 	return nil
 }
 
+func ReadIndexRow(name string, offset uint32) *IndexEntry{
+	file, err := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
+	if err != nil {
+		panic(err)
+	}
+	_, err = file.Seek(int64(offset), 0)
+	temp := make([]byte, 1)
+	_, err = file.Read(temp)
+	if err != nil {
+		panic(err)
+	}
+	KeySize := temp[0]
+	//fmt.Println("Key size")
+	//fmt.Println(KeySize)
+
+	data1 := make([]byte, KeySize)
+	_, err = file.Read(data1)
+	if err != nil {
+		panic(err)
+	}
+	Key := string(data1[:])
+	//fmt.Println("key")
+	//fmt.Println(Key)
+
+	data2 := make([]byte, 4)
+	_, err = file.Read(data2)
+	if err != nil {
+		panic(err)
+	}
+	Offset := binary.LittleEndian.Uint32(data2)
+	//fmt.Println("Offset")
+	//fmt.Println(Offset)
+	//fmt.Println("-------------------------------------------")
+	return &IndexEntry{
+		KeySize: KeySize,
+		Key:     Key,
+		Offset:  Offset,
+	}
+
+}
+
 func ReadIndex(name string) {
 	fl, _ := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
 	defer fl.Close()

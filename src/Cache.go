@@ -12,14 +12,14 @@ type Cache struct {
 	size    int
 }
 
-func NewCache(size int) Cache {
+func NewCache(size int) *Cache {
 	c := Cache{
 		lruList: NewDoublyLinkedList(size),
 		lruMap:  make(map[string]*DoublyLinkedListNode),
 		size:    size,
 	}
 	c.Put("", nil)
-	return c
+	return &c
 }
 
 func (cache *Cache) Search(key string) []byte {

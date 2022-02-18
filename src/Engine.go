@@ -2,6 +2,7 @@ package src
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -33,32 +34,51 @@ func (engine *Engine) EnginePut(key, value string) {
 	fmt.Println("SUCCESS! Key-Value pair { " + key + " : " + value + " }")
 }
 
-func (engine *Engine) EngineGet(key string) []byte{
+func (engine *Engine) EngineGet(key string) ([]byte, bool){
 	fmt.Println("GET")
 	val := engine.memTable.Get(key)
 	if val != nil{
-		return val
+		return val, true
 	}
 	val = engine.cache.Search(key)
 	if val != nil{
 		engine.cache.Put(key, val)
-		return val
+		return val, true
 	}
 	var currentData []string
 	var currentIndex []string
 	var currentSummary []string
 	var currentFilter []string
-	var currentToc []string
-	var currentMetadata []string
-	fmt.Println(currentData, currentIndex, currentSummary, currentFilter, currentToc, currentMetadata)
-	//filesByLevels := make([][]string, Config.LsmMaxLevels)
-	var level int
-	fmt.Println(level)
-	for i := 1; i < Config.LsmMaxLevels; i++{
-		currentData, currentIndex, currentSummary, currentFilter, currentToc, currentMetadata = engine.lsm.GetDataIndexSummary(i)
+	var file *os.File
+	var err error
+	var indexOffset uint32
+	var found bool
+	var indexEntry *IndexEntry
+	var dataEntry Entry
+	var filter *BloomFilter
+	for level := 1; level < Config.LsmMaxLevels; level++{
+		currentData, currentIndex, currentSummary, currentFilter, _, _ = engine.lsm.GetDataIndexSummary(level)
+		for j := 0; j < len(currentData); j++{
+			filter = DecodeBloomFilter("res" + string(os.PathSeparator) + currentFilter[j])
+			if !filter.IsInBloomFilter(key){
+				continue
+			}
+			file, err = os.OpenFile("res" + string(os.PathSeparator) + currentSummary[j], os.O_RDONLY, 0777)
+			if err != nil {
+				panic(err)
+			}
+			indexOffset, found = Search(key, file)
+			if !found{
+				continue
+			}
+			indexEntry = ReadIndexRow(string(os.PathSeparator) + currentIndex[j], indexOffset)
+			dataEntry = ReadDataRow(string(os.PathSeparator) +  currentData[j], indexEntry.Offset)
+			engine.cache.Put(key, val)
+			return dataEntry.value, true
 
+		}
 	}
-	return nil
+	return nil, false
 
 }
 
@@ -79,5 +99,6 @@ func EngineInit() *Engine {
 	max := []uint8{6, 6, 6}
 	req := []uint8{2, 2, 2}
 	engine.lsm = NewLSM(max, req)
+	engine.cache = NewCache(Config.CacheSize)
 	return &engine
 }

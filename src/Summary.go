@@ -1,7 +1,6 @@
 package src
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -66,13 +65,13 @@ func GenerateSummary(indexFile *os.File) {
 	FormToc(nowStr)
 
 }
-func Search(key string, summaryFile *os.File) (uint32, error) {
+func Search(key string, summaryFile *os.File) (uint32, bool) {
 	iter := IndexIterator{summaryFile}
 	last := iter.GetNext()
 	first := iter.GetNext()
 
 	if key < first.Key[:] || key > last.Key {
-		return 0, errors.New("Not in this SStable")
+		return 0, false
 	}
 	previous := first
 
@@ -83,5 +82,5 @@ func Search(key string, summaryFile *os.File) (uint32, error) {
 		}
 		previous = current
 	}
-	return previous.Offset, nil
+	return previous.Offset, true
 }
