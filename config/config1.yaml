@@ -10,8 +10,5 @@ hllMaxPrecision: 16
 hllP: 4
 cmsEpsilon: 0.01
 cmsDelta: 0.01
-bloomFilterExpectedElementsL1: 1024
-bloomFilterExpectedElementsL2: 2048
-bloomFilterExpectedElementsL3: 4096
-bloomFilterExpectedElementsL4: 8192
+bloomFilterExpectedElements: [ 1024,2048, 4096, 8192 ]
 bloomFilterFalsePositive: 0.05

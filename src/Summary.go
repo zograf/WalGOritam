@@ -3,6 +3,7 @@ package src
 import (
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -11,6 +12,13 @@ const BLOCKSIZE = 16
 //write last then normal input
 func GenerateSummary(indexFile *os.File) {
 	name := strings.Replace(indexFile.Name(), "Index", "Summary", 1)
+	nameFilter := strings.Replace(indexFile.Name(), "Index", "Filter", 1)
+
+	lvl_tokens := strings.Split(nameFilter, "-")
+
+	level, _ := strconv.Atoi(lvl_tokens[1])
+	bloom := NewBloomFilter(Config.BloomFilterExpectedElementsL1[level], Config.BloomFilterFalsePositive)
+
 	indexFile.Seek(0, 0)
 	iter := IndexIterator{indexFile}
 
@@ -23,11 +31,13 @@ func GenerateSummary(indexFile *os.File) {
 	i := 0
 	for iter.HasNext() {
 		currentEntry = iter.GetNext()
+		bloom.Add(currentEntry.Key)
 		if i%BLOCKSIZE == 0 {
 			sampleKeys = append(sampleKeys, currentEntry)
 		}
 		i++
 	}
+	EncodeBloomFilter(bloom, nameFilter)
 
 	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0644)
 	defer summaryFile.Close()
