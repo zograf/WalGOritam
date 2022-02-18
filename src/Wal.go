@@ -7,13 +7,15 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
 const (
 	THRESHOLD_DEFAULT        = 10
 	ENTRIES_PER_FILE_DEFAULT = 10
-	PATH                     = "wal/WAL"
+	PATH                     = "wal" + string(filepath.Separator) + "WAL"
+	DIR                      = "wal" + string(filepath.Separator)
 	LOW_WATERMARK            = 2
 )
 
@@ -44,7 +46,7 @@ func NewWal() *Wal {
 		fmt.Println("EPF: Valid")
 	}
 
-	files, _ := ioutil.ReadDir("wal/")
+	files, _ := ioutil.ReadDir(DIR)
 	currentFile := len(files)
 
 	return &Wal{
@@ -70,22 +72,22 @@ func (wal *Wal) put(s string, data []byte) {
 }
 
 func (wal *Wal) deleteSegments() {
-	files, _ := ioutil.ReadDir("wal/")
+	files, _ := ioutil.ReadDir(DIR)
 	fileCount := len(files)
 
 	if fileCount > wal.lowWatermark {
 		for _, file := range files {
-			os.Remove("wal/" + file.Name())
+			os.Remove(DIR + file.Name())
 			fileCount--
 			if fileCount == wal.lowWatermark {
 				break
 			}
 		}
-		files, _ = ioutil.ReadDir("wal/")
+		files, _ = ioutil.ReadDir(DIR)
 
 		i := 0
 		for _, file := range files {
-			os.Rename("wal/"+file.Name(), wal.path+strconv.Itoa(i)+".gob")
+			os.Rename(DIR+file.Name(), wal.path+strconv.Itoa(i)+".gob")
 			i++
 		}
 		//i := 0
