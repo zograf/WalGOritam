@@ -135,7 +135,7 @@ func FormToc(nowStr string) {
 	if err != nil {
 		panic(err)
 	}
-	_, err = file.WriteString(filePath + "Filter.gob\n")
+	_, err = file.WriteString(filePath + "Filter.bin\n")
 	if err != nil {
 		panic(err)
 	}

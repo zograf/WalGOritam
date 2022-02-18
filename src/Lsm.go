@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/gob"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -107,55 +108,133 @@ func (l *LSM) Compress(
 	index, _ := os.OpenFile(indexPath, os.O_CREATE|os.O_RDWR, 0644)
 	indexFirst, _ := os.Open("res" + string(filepath.Separator) + indFirst)
 	indexSecond, _ := os.Open("res" + string(filepath.Separator) + indSecond)
-	aPrev := int64(0)
-	bPrev := int64(0)
 	itFirst := IndexIterator{file: indexFirst}
 	itSecond := IndexIterator{file: indexSecond}
-	itFirst.file.Seek(0, 0)
-	itSecond.file.Seek(0, 0)
+	first := itFirst.GetNext()
+	second := itSecond.GetNext()
+	var entry Entry
 	for {
 		if !itFirst.HasNext() || !itSecond.HasNext() {
 			break
 		}
-		aPrev, _ = itFirst.file.Seek(0, io.SeekCurrent)
-		bPrev, _ = itSecond.file.Seek(0, io.SeekCurrent)
-		a := itFirst.GetNext()
-		b := itSecond.GetNext()
-		aE := ReadDataRow(dataFirst, a.Offset)
-		bE := ReadDataRow(dataSecond, b.Offset)
-		if aE.key < bE.key {
-			tmp := itFirst.GetNext()
-			entry := ReadDataRow(dataFirst, tmp.Offset)
-			l.processEntry(entry, table, index)
-			itSecond = IndexIterator{file: indexSecond}
-			itSecond.file.Seek(bPrev, 0)
+		// Check timestamps
+		firstEntry := ReadDataRow(dataFirst, first.Offset)
+		secondEntry := ReadDataRow(dataSecond, second.Offset)
+		if first.Key == second.Key {
+			// Choose larger
+			if firstEntry.Timestamp > secondEntry.Timestamp {
+				entry = firstEntry
+			} else {
+				entry = secondEntry
+			}
+			first = itFirst.GetNext()
+			second = itSecond.GetNext()
+		} else if first.Key < second.Key {
+			entry = firstEntry
+			first = itFirst.GetNext()
 		} else {
-			tmp := itSecond.GetNext()
-			entry := ReadDataRow(dataSecond, tmp.Offset)
-			l.processEntry(entry, table, index)
-			itFirst = IndexIterator{file: indexFirst}
-			itFirst.file.Seek(aPrev, 0)
+			entry = secondEntry
+			second = itSecond.GetNext()
 		}
-		//if first {
-		//	it := itFirst.GetNext()
-		//	entry := ReadDataRow(dataFirst, it.Offset)
-		//	l.processEntry(entry, table, index)
-		//} else {
-		//	it := itSecond.GetNext()
-		//	entry := ReadDataRow(dataSecond, it.Offset)
-		//	l.processEntry(entry, table, index)
-		//}
+		l.processEntry(entry, table, index)
 	}
-	if !itFirst.HasNext() {
+	// If first one ran out
+	var itEntry *IndexEntry
+	if !itFirst.HasNext() && itSecond.HasNext() {
+		// First remained
+		flag := false
+		flag2 := false
 		for itSecond.HasNext() {
-			it := itSecond.GetNext()
-			entry := ReadDataRow(dataSecond, it.Offset)
+			if first.Key < second.Key {
+				entry = ReadDataRow(dataFirst, first.Offset)
+				l.processEntry(entry, table, index)
+				flag = true
+				break
+			} else if first.Key == second.Key {
+				firstE := ReadDataRow(dataFirst, first.Offset)
+				secondE := ReadDataRow(dataSecond, second.Offset)
+				if firstE.Timestamp > secondE.Timestamp {
+					entry := ReadDataRow(dataFirst, first.Offset)
+					l.processEntry(entry, table, index)
+					flag = true
+					flag2 = true
+					break
+				} else {
+					flag = true
+					break
+				}
+			}
+			itEntry = itSecond.GetNext()
+			entry = ReadDataRow(dataSecond, itEntry.Offset)
+			l.processEntry(entry, table, index)
+		}
+		if flag {
+			if !flag2 {
+				entry = ReadDataRow(dataSecond, itEntry.Offset)
+				l.processEntry(entry, table, index)
+			}
+			for itSecond.HasNext() {
+				itEntry := itSecond.GetNext()
+				entry = ReadDataRow(dataSecond, itEntry.Offset)
+				l.processEntry(entry, table, index)
+			}
+		} else {
+			entry = ReadDataRow(dataFirst, first.Offset)
+			l.processEntry(entry, table, index)
+		}
+	} else if !itSecond.HasNext() && itFirst.HasNext() {
+		// Second remained
+		flag := false
+		flag2 := false
+		for itFirst.HasNext() {
+			if second.Key < first.Key {
+				entry = ReadDataRow(dataSecond, second.Offset)
+				l.processEntry(entry, table, index)
+				flag = true
+				break
+			} else if first.Key == second.Key {
+				firstE := ReadDataRow(dataFirst, first.Offset)
+				secondE := ReadDataRow(dataSecond, second.Offset)
+				if firstE.Timestamp > secondE.Timestamp {
+					flag = true
+					break
+				} else {
+					entry := ReadDataRow(dataSecond, second.Offset)
+					l.processEntry(entry, table, index)
+					flag2 = true
+					flag = true
+					break
+				}
+			}
+			itEntry := itFirst.GetNext()
+			entry = ReadDataRow(dataFirst, itEntry.Offset)
+			l.processEntry(entry, table, index)
+		}
+		if flag {
+			if flag2 {
+				itEntry := itFirst.GetNext()
+				entry = ReadDataRow(dataFirst, itEntry.Offset)
+			}
+			for itFirst.HasNext() {
+				itEntry := itFirst.GetNext()
+				entry = ReadDataRow(dataFirst, itEntry.Offset)
+				l.processEntry(entry, table, index)
+			}
+		} else {
+			entry = ReadDataRow(dataSecond, second.Offset)
 			l.processEntry(entry, table, index)
 		}
 	} else {
-		for itFirst.HasNext() {
-			it := itFirst.GetNext()
-			entry := ReadDataRow(dataFirst, it.Offset)
+		// Both ran out
+		if first.Key < second.Key {
+			entry = ReadDataRow(dataFirst, first.Offset)
+			l.processEntry(entry, table, index)
+			entry = ReadDataRow(dataSecond, second.Offset)
+			l.processEntry(entry, table, index)
+		} else {
+			entry = ReadDataRow(dataSecond, second.Offset)
+			l.processEntry(entry, table, index)
+			entry = ReadDataRow(dataFirst, first.Offset)
 			l.processEntry(entry, table, index)
 		}
 	}
@@ -209,6 +288,8 @@ func (l *LSM) Run() {
 			indFirst, indSecond := index[0], index[1]
 			sumFirst, sumSecond := summary[0], summary[1]
 			filFirst, filSecond := filter[0], filter[1]
+			fmt.Println(filFirst)
+			fmt.Println(filSecond)
 			tocFirst, tocSecond := toc[0], toc[1]
 			data = data[2:]
 			index = index[2:]
