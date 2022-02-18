@@ -2,6 +2,7 @@ package src
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -28,6 +29,10 @@ func GenerateSummary(indexFile *os.File) {
 
 	//summaryFile, _ := os.Create(name)
 
+	data := make([][]byte, 100)
+	dataFileName := strings.Replace(indexFile.Name(), "Index", "Data", 1)
+	var dataEntry Entry
+	fmt.Println(dataEntry)
 	i := 0
 	for iter.HasNext() {
 		currentEntry = iter.GetNext()
@@ -36,8 +41,13 @@ func GenerateSummary(indexFile *os.File) {
 			sampleKeys = append(sampleKeys, currentEntry)
 		}
 		i++
+
+		dataEntry = ReadDataRow(dataFileName, currentEntry.Offset)
+		data = append(data, dataEntry.value)
 	}
 	EncodeBloomFilter(bloom, nameFilter)
+	merkle := FormMerkle(data)
+	merkle.WriteMetadata(strings.Replace(indexFile.Name(), "Index.bin", ".txt", 1))
 
 	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0644)
 	defer summaryFile.Close()

@@ -2,7 +2,10 @@ package src
 
 import (
 	"crypto/sha1"
+	"encoding/base64"
+	"fmt"
 	"math"
+	"os"
 )
 
 type Node struct {
@@ -91,7 +94,31 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	return MerkleTree{root: parentNodes[0]}
 }
 
-func (merkle *MerkleTree) WriteMetadata(){
-
+func (merkle *MerkleTree) WriteMetadata(fileName string){
+	file, err := os.Create(fileName)
+	if err != nil {
+		panic(err)
+	}
+	queue := Queue{
+		size:  0,
+		data:  make([]*Node, 1),
+		front: 0,
+	}
+	var currentNode *Node
+	//fmt.Println(currentNode)
+	queue.Enqueue(merkle.root)
+	var numOfWritten int
+	for queue.size > 1{
+		currentNode = queue.Dequeue()
+		numOfWritten, err = file.WriteString(base64.URLEncoding.EncodeToString(currentNode.hash))
+		fmt.Println(numOfWritten)
+		if err != nil {
+			panic(err)
+		}
+		if currentNode != nil{
+			queue.Enqueue(currentNode.left)
+			queue.Enqueue(currentNode.right)
+		}
+	}
 }
 
