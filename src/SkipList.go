@@ -1,6 +1,7 @@
 package src
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -103,7 +104,10 @@ func GreaterEqual(key1 string, key2 string) bool {
 	}
 }
 
-func (sl *SkipList) Set(key string, val []byte) {
+func (sl *SkipList) Set(key string, val []byte) error{
+	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0{
+		return errors.New("invalid key input")
+	}
 
 	h := sl.height
 	node := sl.Head
@@ -123,7 +127,7 @@ func (sl *SkipList) Set(key string, val []byte) {
 	//ukoliko taj kljuc vec postoji samo se menja vrednost
 	if levelPath[0].next[0].Key == key {
 		levelPath[0].next[0].Value = val
-		return
+		return nil
 	}
 
 	//uzima se nasumicna vrednost za nivo propagacije
@@ -152,6 +156,7 @@ func (sl *SkipList) Set(key string, val []byte) {
 		levelPath[i].next[i] = &newNode
 	}
 	sl.Size += 64 + len(val)
+	return nil
 }
 
 //okrece elemente u slice-u u obrnutom redosledu

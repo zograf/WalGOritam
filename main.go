@@ -39,6 +39,13 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
+	//data := make([][]byte, 3)
+	//data1 := []byte{1, 2, 233, 3}
+	//data = append(data, data1)
+	//data1 = []byte{99, 2, 123, 3}
+	//data = append(data, data1)
+	//merkle := src.FormMerkle(data)
+	//merkle.WriteMetadata("res/asd.txt")
 	src.NewConf()
 	fileFlag := true
 	src.TestCache()
@@ -51,6 +58,10 @@ func main() {
 			reader := bufio.NewReader(os.Stdin)
 			fmt.Print("> ")
 			text, _ := reader.ReadString('\n')
+			if strings.Compare(text, "inf") == 0 || strings.Compare(text, "-inf") == 0{
+				fmt.Println("Invalid key")
+				continue
+			}
 			text = strings.ReplaceAll(text, "\n", "")
 			if text == "EXIT" {
 				os.Exit(0)
