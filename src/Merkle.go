@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"math"
 	"os"
 )
 
@@ -20,10 +19,6 @@ func (node *Node) isLeaf() bool {
 
 type MerkleTree struct {
 	root *Node
-}
-
-func Pow(a int, b int) int {
-	return int(math.Pow(float64(a), float64(b)))
 }
 
 func FormMerkle(dataArray [][]byte) MerkleTree {
@@ -55,10 +50,9 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	var parentNodes []*Node
 	var numOfChildren int
 	var numOfParents int
-	numOfParents = n
 	for !queue.IsEmpty() {
 		// at this height we need this many parent nodes
-		numOfChildren = numOfParents
+		numOfChildren = n
 		numOfParents = (numOfChildren + 1) / 2
 		parentNodes = make([]*Node, numOfParents)
 		// we set values for each parent
@@ -94,6 +88,10 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	return MerkleTree{root: parentNodes[0]}
 }
 
+func (merkle *MerkleTree) GetRootHash() string{
+	return base64.URLEncoding.EncodeToString(merkle.root.hash)
+}
+
 func (merkle *MerkleTree) WriteMetadata(filePath string){
 	file, err := os.Create(filePath)
 	defer file.Close()
@@ -106,9 +104,7 @@ func (merkle *MerkleTree) WriteMetadata(filePath string){
 		front: 0,
 	}
 	var currentNode *Node
-	//fmt.Println(currentNode)
 	queue.Enqueue(merkle.root)
-	//queue.Enqueue(nil)
 	var numOfWritten int
 	for !queue.IsEmpty(){
 		currentNode = queue.Dequeue()
