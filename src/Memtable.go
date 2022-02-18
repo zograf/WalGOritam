@@ -113,7 +113,7 @@ func (mt *Memtable) flush() {
 		indexEntryCount++
 	}
 	GenerateSummary(indexF)
-	FormToc(nowStr)
+
 }
 
 func FormToc(nowStr string){
