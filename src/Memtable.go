@@ -1,7 +1,6 @@
 package src
 
 import (
-	"bufio"
 	"encoding/binary"
 	"fmt"
 	"hash/crc32"
@@ -9,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -116,35 +116,35 @@ func (mt *Memtable) flush() {
 
 }
 
-func FormToc(nowStr string){
-	filePath := "res" + string(filepath.Separator) + "L-1-" + nowStr
+func FormToc(nowStr string) {
+	filePath := nowStr
 	file, err := os.Create(filePath + "TOC.txt")
+	filePath = strings.ReplaceAll(filePath, "res"+string(filepath.Separator), "")
 	if err != nil {
 		panic(err)
 	}
-	writer := bufio.NewWriter(file)
-	_, err = writer.WriteString(filePath + "Data.bin\n")
+	_, err = file.WriteString(filePath + "Data.bin\n")
 	if err != nil {
 		panic(err)
 	}
-	_, err = writer.WriteString(filePath + "Index.bin\n")
+	_, err = file.WriteString(filePath + "Index.bin\n")
 	if err != nil {
 		panic(err)
 	}
-	_, err = writer.WriteString(filePath + "Summary.bin\n")
+	_, err = file.WriteString(filePath + "Summary.bin\n")
 	if err != nil {
 		panic(err)
 	}
-	_, err = writer.WriteString(filePath + "Filter.gob\n")
-	if err != nil {
-		panic(err)
-	}
-	_, err = writer.WriteString(filePath + "Metadata.txt\n")
+	_, err = file.WriteString(filePath + "Filter.gob\n")
 	if err != nil {
 		panic(err)
 	}
 
-
+	_, err = file.WriteString(filePath + "Metadata.txt\n")
+	if err != nil {
+		panic(err)
+	}
+	file.Close()
 }
 
 func CRC32(data []byte) uint32 {

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/gob"
-	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -46,12 +45,13 @@ func DecodeLSM(path string) *LSM {
 	return &l
 }
 
-func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []string) {
-	files, _ := ioutil.ReadDir("res")
+func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []string, []string) {
+	files, _ := ioutil.ReadDir("res" + string(filepath.Separator))
 	currentData := make([]string, 0)
 	currentIndex := make([]string, 0)
 	currentSummary := make([]string, 0)
 	currentFilter := make([]string, 0)
+	currentToc := make([]string, 0)
 	for _, entry := range files {
 		if strings.Contains(entry.Name(), "TOC") {
 			tokens := strings.Split(entry.Name(), "-")
@@ -72,15 +72,16 @@ func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []st
 			currentIndex = append(currentIndex, index)
 			currentSummary = append(currentSummary, summary)
 			currentFilter = append(currentFilter, filter)
+			currentToc = append(currentToc, entry.Name())
 			f.Close()
 		}
 	}
-	return currentData, currentIndex, currentSummary, currentFilter
+	return currentData, currentIndex, currentSummary, currentFilter, currentToc
 }
 
 func (l *LSM) Check() (bool, int) {
 	for i := range l.LevelsMax {
-		data, _, _, _ := l.GetDataIndexSummary(i + 1)
+		data, _, _, _, _ := l.GetDataIndexSummary(i + 1)
 		max := l.LevelsMax[i]
 		req := l.LevelsRequired[i]
 		// If size of data reached max or required threshold
@@ -100,22 +101,63 @@ func (l *LSM) Compress(
 
 	levelStr := strconv.Itoa(level)
 	nowStr := strconv.FormatInt(time.Now().UnixMicro(), 10)
-	tablePath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + ".bin"
+	tablePath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + "Data.bin"
 	indexPath := "res" + string(filepath.Separator) + "L-" + levelStr + "-" + nowStr + "Index.bin"
 	table, _ := os.OpenFile(tablePath, os.O_CREATE|os.O_RDWR, 0644)
 	index, _ := os.OpenFile(indexPath, os.O_CREATE|os.O_RDWR, 0644)
 	indexFirst, _ := os.Open("res" + string(filepath.Separator) + indFirst)
 	indexSecond, _ := os.Open("res" + string(filepath.Separator) + indSecond)
-	indexFirst.Seek(0, 0)
-	indexSecond.Seek(0, 0)
+	aPrev := int64(0)
+	bPrev := int64(0)
 	itFirst := IndexIterator{file: indexFirst}
 	itSecond := IndexIterator{file: indexSecond}
+	itFirst.file.Seek(0, 0)
+	itSecond.file.Seek(0, 0)
 	for {
-		entry, err := l.getNext(&itFirst, &itSecond, dataFirst, dataSecond)
-		if err != nil {
+		if !itFirst.HasNext() || !itSecond.HasNext() {
 			break
 		}
-		l.processEntry(*entry, table, index)
+		aPrev, _ = itFirst.file.Seek(0, io.SeekCurrent)
+		bPrev, _ = itSecond.file.Seek(0, io.SeekCurrent)
+		a := itFirst.GetNext()
+		b := itSecond.GetNext()
+		aE := ReadDataRow(dataFirst, a.Offset)
+		bE := ReadDataRow(dataSecond, b.Offset)
+		if aE.key < bE.key {
+			tmp := itFirst.GetNext()
+			entry := ReadDataRow(dataFirst, tmp.Offset)
+			l.processEntry(entry, table, index)
+			itSecond = IndexIterator{file: indexSecond}
+			itSecond.file.Seek(bPrev, 0)
+		} else {
+			tmp := itSecond.GetNext()
+			entry := ReadDataRow(dataSecond, tmp.Offset)
+			l.processEntry(entry, table, index)
+			itFirst = IndexIterator{file: indexFirst}
+			itFirst.file.Seek(aPrev, 0)
+		}
+		//if first {
+		//	it := itFirst.GetNext()
+		//	entry := ReadDataRow(dataFirst, it.Offset)
+		//	l.processEntry(entry, table, index)
+		//} else {
+		//	it := itSecond.GetNext()
+		//	entry := ReadDataRow(dataSecond, it.Offset)
+		//	l.processEntry(entry, table, index)
+		//}
+	}
+	if !itFirst.HasNext() {
+		for itSecond.HasNext() {
+			it := itSecond.GetNext()
+			entry := ReadDataRow(dataSecond, it.Offset)
+			l.processEntry(entry, table, index)
+		}
+	} else {
+		for itFirst.HasNext() {
+			it := itFirst.GetNext()
+			entry := ReadDataRow(dataFirst, it.Offset)
+			l.processEntry(entry, table, index)
+		}
 	}
 	GenerateSummary(index)
 	// Close and remove excess
@@ -151,48 +193,8 @@ func (l *LSM) processEntry(entry Entry, table, index *os.File) {
 	binary.Write(table, binary.LittleEndian, []byte(entry.key))
 	//	Value ValueSize bajta
 	binary.Write(table, binary.LittleEndian, entry.value)
-
 	offset := uint32(temp)
 	WriteIndexRow([]byte(entry.key), entry.KeySize, offset, index)
-}
-
-func (l *LSM) getNext(first, second *IndexIterator, dataFirst, dataSecond string) (*Entry, error) {
-	if !first.HasNext() && !second.HasNext() {
-		return nil, errors.New("Iterators have no more values")
-	}
-	if !first.HasNext() {
-		temp := second.GetNext()
-		entry := ReadDataRow(dataSecond, temp.Offset)
-		return &entry, nil
-	} else if !second.HasNext() {
-		temp := first.GetNext()
-		entry := ReadDataRow(dataFirst, temp.Offset)
-		return &entry, nil
-	} else {
-		a := first.PeekNext()
-		b := second.PeekNext()
-		aEntry := ReadDataRow(dataFirst, a.Offset)
-		bEntry := ReadDataRow(dataSecond, b.Offset)
-		if aEntry.key == bEntry.key {
-			if aEntry.Timestamp < bEntry.Timestamp {
-				temp := first.GetNext()
-				entry := ReadDataRow(dataFirst, temp.Offset)
-				return &entry, nil
-			} else {
-				temp := second.GetNext()
-				entry := ReadDataRow(dataSecond, temp.Offset)
-				return &entry, nil
-			}
-		} else if a.Key < b.Key {
-			temp := first.GetNext()
-			entry := ReadDataRow(dataFirst, temp.Offset)
-			return &entry, nil
-		} else {
-			temp := second.PeekNext()
-			entry := ReadDataRow(dataSecond, temp.Offset)
-			return &entry, nil
-		}
-	}
 }
 
 func (l *LSM) Run() {
@@ -201,18 +203,22 @@ func (l *LSM) Run() {
 		if !ok {
 			break
 		}
-		data, index, summary, filter := l.GetDataIndexSummary(level + 1)
+		data, index, summary, filter, toc := l.GetDataIndexSummary(level + 1)
 		for {
 			dataFirst, dataSecond := data[0], data[1]
 			indFirst, indSecond := index[0], index[1]
 			sumFirst, sumSecond := summary[0], summary[1]
 			filFirst, filSecond := filter[0], filter[1]
+			tocFirst, tocSecond := toc[0], toc[1]
 			data = data[2:]
 			index = index[2:]
 			summary = summary[2:]
 			filter = filter[2:]
+			toc = toc[2:]
 			// Compress and retreive dataPath, indexPath
 			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, filFirst, filSecond, level+2)
+			os.Remove("res" + string(filepath.Separator) + tocFirst)
+			os.Remove("res" + string(filepath.Separator) + tocSecond)
 			// Exit condition (no more compacting on this level)
 			if len(data) <= 1 {
 				break

@@ -18,7 +18,7 @@ func GenerateSummary(indexFile *os.File) {
 	lvl_tokens := strings.Split(nameFilter, "-")
 
 	level, _ := strconv.Atoi(lvl_tokens[1])
-	bloom := NewBloomFilter(Config.BloomFilterExpectedElementsL1[level], Config.BloomFilterFalsePositive)
+	bloom := NewBloomFilter(Config.BloomFilterExpectedElementsL1[level-1], Config.BloomFilterFalsePositive)
 
 	indexFile.Seek(0, 0)
 	iter := IndexIterator{indexFile}
@@ -62,7 +62,7 @@ func GenerateSummary(indexFile *os.File) {
 		WriteIndexRow([]byte(key.Key), key.KeySize, offset, summaryFile)
 		offset += uint32(last.KeySize) + 5
 	}
-	nowStr := strings.Replace(indexFile.Name(), "Index", "", 1)
+	nowStr := strings.Replace(indexFile.Name(), "Index.bin", "", 1)
 	FormToc(nowStr)
 
 }

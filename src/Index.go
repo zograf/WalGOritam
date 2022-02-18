@@ -2,6 +2,7 @@ package src
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -41,18 +42,14 @@ func (mti *IndexIterator) HasNext() bool {
 	// return to position before function call
 	mti.file.Seek(-1, 1)
 	if err != nil {
-		if err == io.EOF {
-			return false
-		} else {
-			return true
-		}
+		return false
 	}
 	return true
 }
 
 func (mti *IndexIterator) PeekNext() *IndexEntry {
 	if mti.HasNext() {
-		prevOffset, _ := mti.file.Seek(0, 1)
+		prevOffset, _ := mti.file.Seek(0, io.SeekCurrent)
 		temp := make([]byte, 1)
 		_, err := mti.file.Read(temp)
 		if err != nil {
@@ -80,7 +77,9 @@ func (mti *IndexIterator) PeekNext() *IndexEntry {
 		//fmt.Println("Offset")
 		//fmt.Println(Offset)
 		//fmt.Println("-------------------------------------------")
-		mti.file.Seek(prevOffset, 0)
+		fmt.Println(prevOffset)
+		fmt.Println(mti.file.Seek(0, io.SeekCurrent))
+		mti.file.Seek(prevOffset, io.SeekStart)
 		return &IndexEntry{
 			KeySize: KeySize,
 			Key:     Key,
