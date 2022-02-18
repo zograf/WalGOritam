@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/binary"
 	"encoding/gob"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -46,13 +45,14 @@ func DecodeLSM(path string) *LSM {
 	return &l
 }
 
-func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []string, []string) {
+func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []string, []string, []string) {
 	files, _ := ioutil.ReadDir("res" + string(filepath.Separator))
 	currentData := make([]string, 0)
 	currentIndex := make([]string, 0)
 	currentSummary := make([]string, 0)
 	currentFilter := make([]string, 0)
 	currentToc := make([]string, 0)
+	currentMetadata := make([]string, 0)
 	for _, entry := range files {
 		if strings.Contains(entry.Name(), "TOC") {
 			tokens := strings.Split(entry.Name(), "-")
@@ -69,20 +69,23 @@ func (l *LSM) GetDataIndexSummary(level int) ([]string, []string, []string, []st
 			summary := scanner.Text()
 			scanner.Scan()
 			filter := scanner.Text()
+			scanner.Scan()
+			metadata := scanner.Text()
 			currentData = append(currentData, data)
 			currentIndex = append(currentIndex, index)
 			currentSummary = append(currentSummary, summary)
 			currentFilter = append(currentFilter, filter)
 			currentToc = append(currentToc, entry.Name())
+			currentMetadata = append(currentMetadata, metadata)
 			f.Close()
 		}
 	}
-	return currentData, currentIndex, currentSummary, currentFilter, currentToc
+	return currentData, currentIndex, currentSummary, currentFilter, currentToc, currentMetadata
 }
 
 func (l *LSM) Check() (bool, int) {
 	for i := range l.LevelsMax {
-		data, _, _, _, _ := l.GetDataIndexSummary(i + 1)
+		data, _, _, _, _, _ := l.GetDataIndexSummary(i + 1)
 		max := l.LevelsMax[i]
 		req := l.LevelsRequired[i]
 		// If size of data reached max or required threshold
@@ -282,15 +285,14 @@ func (l *LSM) Run() {
 		if !ok {
 			break
 		}
-		data, index, summary, filter, toc := l.GetDataIndexSummary(level + 1)
+		data, index, summary, filter, toc, meta := l.GetDataIndexSummary(level + 1)
 		for {
 			dataFirst, dataSecond := data[0], data[1]
 			indFirst, indSecond := index[0], index[1]
 			sumFirst, sumSecond := summary[0], summary[1]
 			filFirst, filSecond := filter[0], filter[1]
-			fmt.Println(filFirst)
-			fmt.Println(filSecond)
 			tocFirst, tocSecond := toc[0], toc[1]
+			metaFirst, metaSecond := meta[0], meta[1]
 			data = data[2:]
 			index = index[2:]
 			summary = summary[2:]
@@ -300,6 +302,8 @@ func (l *LSM) Run() {
 			l.Compress(dataFirst, dataSecond, indFirst, indSecond, sumFirst, sumSecond, filFirst, filSecond, level+2)
 			os.Remove("res" + string(filepath.Separator) + tocFirst)
 			os.Remove("res" + string(filepath.Separator) + tocSecond)
+			os.Remove("res" + string(filepath.Separator) + metaFirst)
+			os.Remove("res" + string(filepath.Separator) + metaSecond)
 			// Exit condition (no more compacting on this level)
 			if len(data) <= 1 {
 				break

@@ -1,6 +1,9 @@
 package src
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Engine struct {
 	tokenBucket *TokenBucket
@@ -10,6 +13,10 @@ type Engine struct {
 }
 
 func (engine *Engine) EnginePut(key, value string) {
+	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0 {
+		fmt.Println("Invalid key")
+		return
+	}
 	err := engine.tokenBucket.CheckBucket()
 	if err != nil {
 		fmt.Println("You have no tokens left!")
@@ -31,6 +38,10 @@ func (engine *Engine) EngineGet(key string) {
 
 func (engine *Engine) EngineDelete(key string) {
 	fmt.Println("DEL")
+}
+
+func (engine *Engine) ForceFlush() {
+	engine.memTable.flush()
 }
 
 func EngineInit() *Engine {

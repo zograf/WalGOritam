@@ -3,7 +3,6 @@ package src
 import (
 	"crypto/sha1"
 	"encoding/base64"
-	"fmt"
 	"os"
 )
 
@@ -88,11 +87,11 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	return MerkleTree{root: parentNodes[0]}
 }
 
-func (merkle *MerkleTree) GetRootHash() string{
+func (merkle *MerkleTree) GetRootHash() string {
 	return base64.URLEncoding.EncodeToString(merkle.root.hash)
 }
 
-func (merkle *MerkleTree) WriteMetadata(filePath string){
+func (merkle *MerkleTree) WriteMetadata(filePath string) {
 	file, err := os.Create(filePath)
 	defer file.Close()
 	if err != nil {
@@ -105,14 +104,12 @@ func (merkle *MerkleTree) WriteMetadata(filePath string){
 	}
 	var currentNode *Node
 	queue.Enqueue(merkle.root)
-	var numOfWritten int
-	for !queue.IsEmpty(){
+	for !queue.IsEmpty() {
 		currentNode = queue.Dequeue()
-		fmt.Println(numOfWritten)
 		if err != nil {
 			panic(err)
 		}
-		if currentNode != nil{
+		if currentNode != nil {
 			if currentNode.left != nil {
 				queue.Enqueue(currentNode.left)
 			}
@@ -120,7 +117,6 @@ func (merkle *MerkleTree) WriteMetadata(filePath string){
 				queue.Enqueue(currentNode.right)
 			}
 		}
-		numOfWritten, err = file.WriteString(base64.URLEncoding.EncodeToString(currentNode.hash) + "\n")
+		_, _ = file.WriteString(base64.URLEncoding.EncodeToString(currentNode.hash) + "\n")
 	}
 }
-

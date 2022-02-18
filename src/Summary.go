@@ -2,8 +2,8 @@ package src
 
 import (
 	"errors"
-	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -29,10 +29,10 @@ func GenerateSummary(indexFile *os.File) {
 
 	//summaryFile, _ := os.Create(name)
 
-	data := make([][]byte, 100)
+	data := make([][]byte, 0)
 	dataFileName := strings.Replace(indexFile.Name(), "Index", "Data", 1)
+	dataFileName = strings.Replace(dataFileName, "res"+string(filepath.Separator), "", 1)
 	var dataEntry Entry
-	fmt.Println(dataEntry)
 	i := 0
 	for iter.HasNext() {
 		currentEntry = iter.GetNext()
@@ -47,7 +47,7 @@ func GenerateSummary(indexFile *os.File) {
 	}
 	EncodeBloomFilter(bloom, nameFilter)
 	merkle := FormMerkle(data)
-	merkle.WriteMetadata(strings.Replace(indexFile.Name(), "Index.bin", ".txt", 1))
+	merkle.WriteMetadata(strings.Replace(indexFile.Name(), "Index.bin", "Metadata.txt", 1))
 
 	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0644)
 	defer summaryFile.Close()

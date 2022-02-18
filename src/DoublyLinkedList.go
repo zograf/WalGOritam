@@ -2,7 +2,6 @@ package src
 
 import (
 	"encoding/binary"
-	"fmt"
 	"strconv"
 )
 
@@ -105,7 +104,7 @@ func DoublyLinkedTest() {
 		binary.LittleEndian.PutUint32(bs, uint32(i))
 		dl.AddFirst(strconv.Itoa(i), bs)
 	}
-	fmt.Println("done")
+	//fmt.Println("done")
 
 	test1 := dl.head.next.next.next
 	dl.swapPlaces(test1)

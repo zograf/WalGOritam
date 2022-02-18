@@ -139,7 +139,6 @@ func FormToc(nowStr string) {
 	if err != nil {
 		panic(err)
 	}
-
 	_, err = file.WriteString(filePath + "Metadata.txt\n")
 	if err != nil {
 		panic(err)

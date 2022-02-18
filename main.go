@@ -36,6 +36,8 @@ func fileTest(path string, engine *src.Engine) {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
+
+	engine.ForceFlush()
 }
 
 func main() {
@@ -51,12 +53,9 @@ func main() {
 			reader := bufio.NewReader(os.Stdin)
 			fmt.Print("> ")
 			text, _ := reader.ReadString('\n')
-			if strings.Compare(text, "inf") == 0 || strings.Compare(text, "-inf") == 0{
-				fmt.Println("Invalid key")
-				continue
-			}
 			text = strings.ReplaceAll(text, "\n", "")
 			if text == "EXIT" {
+				engine.ForceFlush()
 				os.Exit(0)
 			}
 			tokens := strings.Split(text, " ")

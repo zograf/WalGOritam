@@ -2,8 +2,6 @@ package src
 
 import (
 	"encoding/binary"
-	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 )
@@ -45,48 +43,6 @@ func (mti *IndexIterator) HasNext() bool {
 		return false
 	}
 	return true
-}
-
-func (mti *IndexIterator) PeekNext() *IndexEntry {
-	if mti.HasNext() {
-		prevOffset, _ := mti.file.Seek(0, io.SeekCurrent)
-		temp := make([]byte, 1)
-		_, err := mti.file.Read(temp)
-		if err != nil {
-			panic(err)
-		}
-		KeySize := temp[0]
-		//fmt.Println("Key size")
-		//fmt.Println(KeySize)
-
-		data1 := make([]byte, KeySize)
-		_, err = mti.file.Read(data1)
-		if err != nil {
-			panic(err)
-		}
-		Key := string(data1[:])
-		//fmt.Println("key")
-		//fmt.Println(Key)
-
-		data2 := make([]byte, 4)
-		_, err = mti.file.Read(data2)
-		if err != nil {
-			panic(err)
-		}
-		Offset := binary.LittleEndian.Uint32(data2)
-		//fmt.Println("Offset")
-		//fmt.Println(Offset)
-		//fmt.Println("-------------------------------------------")
-		fmt.Println(prevOffset)
-		fmt.Println(mti.file.Seek(0, io.SeekCurrent))
-		mti.file.Seek(prevOffset, io.SeekStart)
-		return &IndexEntry{
-			KeySize: KeySize,
-			Key:     Key,
-			Offset:  Offset,
-		}
-	}
-	return nil
 }
 
 func (mti *IndexIterator) GetNext() *IndexEntry {
