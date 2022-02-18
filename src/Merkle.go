@@ -90,3 +90,8 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	}
 	return MerkleTree{root: parentNodes[0]}
 }
+
+func (merkle *MerkleTree) WriteMetadata(){
+
+}
+
