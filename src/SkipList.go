@@ -200,28 +200,13 @@ func (sl *SkipList) SearchNode(key string) *SkipListNode {
 	}
 }
 
-func (sl *SkipList) Delete(key string) {
-	h := sl.height
-	node := sl.Head
-	levelPath := make([]*SkipListNode, 0)
-	for i := h; i >= 0; i-- {
-		for GreaterEqual(key, node.next[i].Key) {
-			node = node.next[i]
-		}
-		// cuva se putanja kojom se islo, odnosno poslednji(skroz desno) cvor kojim smo se kretali kroz listu
-		//na svakom nivou, bice korisno kasnije
-		levelPath = append(levelPath, node)
+func (sl *SkipList) Delete(key string) bool{
+	node := sl.SearchNode(key)
+	if node == nil{
+		return false
 	}
-	reverseSlice(levelPath)
-	// svi u level path su bili manji, proveravamo  da li je sledeci cvor trazeni cvor
-	node = levelPath[0].next[0]
-	if node.Key != key {
-		panic("No such Key in skip list")
-	}
-	//trebalo bi len(node.next) - 1
-	for i := len(node.next) - 2; i >= 0; i-- {
-		levelPath[i].next[i] = node.next[i]
-	}
+	node.Tombstone = 1
+	return true
 }
 func (sl *SkipList) CreateIterator() SkipListIterator {
 	return SkipListIterator{

@@ -28,7 +28,6 @@ func (mt *Memtable) Delete(key string) {
 	mt.size -= uint16(len(mt.Get(key)))
 	mt.size -= uint16(binary.Size(key))
 	mt.sl.Delete(key)
-
 }
 
 func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
