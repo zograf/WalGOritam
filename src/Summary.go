@@ -33,17 +33,22 @@ func GenerateSummary(indexFile *os.File) {
 	dataFileName = strings.Replace(dataFileName, "res"+string(filepath.Separator), "", 1)
 	var dataEntry Entry
 	i := 0
+	var offset uint32
+	offset = 0
 	for iter.HasNext() {
 		currentEntry = iter.GetNext()
 		bloom.Add(currentEntry.Key)
 		if i%BLOCKSIZE == 0 {
 			sampleKeys = append(sampleKeys, currentEntry)
+			sampleKeys[len(sampleKeys)-1].Offset = offset
 		}
+		offset += uint32(currentEntry.KeySize) + 5
 		i++
 
 		dataEntry = ReadDataRow(dataFileName, currentEntry.Offset)
 		data = append(data, dataEntry.value)
 	}
+
 	EncodeBloomFilter(bloom, nameFilter)
 	merkle := FormMerkle(data)
 	merkle.WriteMetadata(strings.Replace(indexFile.Name(), "Index.bin", "Metadata.txt", 1))
@@ -51,11 +56,8 @@ func GenerateSummary(indexFile *os.File) {
 	summaryFile, _ := os.OpenFile(name, os.O_CREATE|os.O_RDWR, 0644)
 	defer summaryFile.Close()
 
-	var offset uint32
-	offset = 0
 	last := sampleKeys[len(sampleKeys)-1]
-	WriteIndexRow([]byte(last.Key), last.KeySize, offset, summaryFile)
-	offset += uint32(last.KeySize) + 5
+	WriteIndexRow([]byte(last.Key), last.KeySize, last.Offset, summaryFile)
 
 	for _, key := range sampleKeys {
 		WriteIndexRow([]byte(key.Key), key.KeySize, offset, summaryFile)
