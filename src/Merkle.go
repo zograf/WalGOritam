@@ -49,9 +49,11 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 	var parentNodes []*Node
 	var numOfChildren int
 	var numOfParents int
+	// just for the start beacuse of loop
+	numOfParents = n
 	for !queue.IsEmpty() {
 		// at this height we need this many parent nodes
-		numOfChildren = n
+		numOfChildren = numOfParents
 		numOfParents = (numOfChildren + 1) / 2
 		parentNodes = make([]*Node, numOfParents)
 		// we set values for each parent
