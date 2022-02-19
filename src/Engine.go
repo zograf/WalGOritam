@@ -50,7 +50,7 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	var currentIndex []string
 	var currentSummary []string
 	var currentFilter []string
-	var file *os.File
+	var summaryFile *os.File
 	var err error
 	var indexOffset uint32
 	var found bool
@@ -69,8 +69,6 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 		value:     nil,
 	}
 	var indexIt IndexIterator
-	fmt.Println(indexIt)
-	fmt.Println(indexFile)
 	found = false
 
 	for level := 1; level < Config.LsmMaxLevels; level++{
@@ -80,11 +78,12 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			if !filter.IsInBloomFilter(key) {
 				continue
 			}
-			file, err = os.OpenFile("res"+string(os.PathSeparator)+currentSummary[j], os.O_RDONLY, 0777)
+			summaryFile, err = os.OpenFile("res"+string(os.PathSeparator)+currentSummary[j], os.O_RDONLY, 0777)
 			if err != nil {
 				panic(err)
 			}
-			indexOffset, isBetween = Search(key, file)
+			indexOffset, isBetween = Search(key, summaryFile)
+			summaryFile.Close()
 			if !isBetween {
 				continue
 			}
@@ -95,6 +94,9 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			indexIt = IndexIterator{file: indexFile}
 			indexIt.PositionIterator(indexOffset)
 			for i := 0; i < Config.BlockSize; i++{
+				if !indexIt.HasNext(){
+					break
+				}
 				indexEntry = indexIt.GetNext()
 				if indexEntry.Key > key{
 					break
@@ -108,14 +110,14 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 					found = true
 				}
 			}
-
+			indexFile.Close()
 		}
 	}
 	if found{
-		//engine.cache.Put(key, val)
 		if biggestTimestampEntry.Tombstone == 1{
 			return nil, false
 		}else{
+			engine.cache.Put(biggestTimestampEntry.key, biggestTimestampEntry.value)
 			return biggestTimestampEntry.value, true
 		}
 	}

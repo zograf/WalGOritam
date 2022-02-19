@@ -137,7 +137,8 @@ func ReadIndex(name string) {
 	it := IndexIterator{file: fl}
 	var i int = 0
 	for it.HasNext() {
-		fmt.Println(strconv.Itoa(i), " ", it.GetNext())
+		pos, _:= it.file.Seek(0, 1)
+		fmt.Println(strconv.FormatInt(pos, 10), " ", it.GetNext())
 		i++
 	}
 }
