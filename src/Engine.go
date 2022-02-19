@@ -201,10 +201,9 @@ func EngineInit() *Engine {
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()
 	engine.wal = NewWal()
-	max := []uint8{6, 6, 6}
-	req := []uint8{2, 2, 2}
-	engine.lsm = NewLSM(max, req)
+	engine.lsm = NewLSM()
 	engine.cache = NewCache(Config.CacheSize)
-	engine.hll = NewHLL()
+	engine.hll = NewHLL(0)
+	engine.cms = NewCountMinSketch(0, 0)
 	return &engine
 }

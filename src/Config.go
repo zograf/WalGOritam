@@ -23,6 +23,8 @@ type Conf struct {
 	BloomFilterExpectedElementsL1 []int   `yaml:"bloomFilterExpectedElements"`
 	BloomFilterFalsePositive      float64 `yaml:"bloomFilterFalsePositive"`
 	LsmMaxLevels                  int     `yaml:"lsmMaxLevels"`
+	LsmMaxArray                   []uint8 `yaml:"lsmMaxArray"`
+	LsmReqArray                   []uint8 `yaml:"lsmReqArray"`
 	BlockSize                     int     `yaml:"blockSize"`
 }
 

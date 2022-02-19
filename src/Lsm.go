@@ -18,10 +18,10 @@ type LSM struct {
 	LevelsRequired []uint8
 }
 
-func NewLSM(max, req []uint8) *LSM {
+func NewLSM() *LSM {
 	l := LSM{}
-	l.LevelsMax = max
-	l.LevelsRequired = req
+	l.LevelsMax = Config.LsmMaxArray
+	l.LevelsRequired = Config.LsmReqArray
 	return &l
 }
 
