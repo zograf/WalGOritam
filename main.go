@@ -41,6 +41,12 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
+	if _, err := os.Stat("res"); os.IsNotExist(err) {
+		os.Mkdir("res", 0777)
+	}
+	if _, err := os.Stat("wal"); os.IsNotExist(err) {
+		os.Mkdir("wal", 0777)
+	}
 	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
 	fileFlag := true
