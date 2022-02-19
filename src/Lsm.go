@@ -152,6 +152,7 @@ func (l *LSM) Compress(
 				entry = ReadDataRow(dataFirst, first.Offset)
 				l.processEntry(entry, table, index)
 				flag = true
+				flag2 = true
 				break
 			} else if first.Key == second.Key {
 				firstE := ReadDataRow(dataFirst, first.Offset)
@@ -159,20 +160,17 @@ func (l *LSM) Compress(
 				if firstE.Timestamp > secondE.Timestamp {
 					entry := ReadDataRow(dataFirst, first.Offset)
 					l.processEntry(entry, table, index)
-					flag = true
-					flag2 = true
-					break
-				} else {
-					flag = true
-					break
 				}
+				flag = true
+				flag2 = true
+				break
 			}
 			itEntry = itSecond.GetNext()
 			entry = ReadDataRow(dataSecond, itEntry.Offset)
 			l.processEntry(entry, table, index)
 		}
 		if flag {
-			if !flag2 {
+			if flag2 {
 				entry = ReadDataRow(dataSecond, itEntry.Offset)
 				l.processEntry(entry, table, index)
 			}
@@ -194,20 +192,18 @@ func (l *LSM) Compress(
 				entry = ReadDataRow(dataSecond, second.Offset)
 				l.processEntry(entry, table, index)
 				flag = true
+				flag2 = true
 				break
 			} else if first.Key == second.Key {
 				firstE := ReadDataRow(dataFirst, first.Offset)
 				secondE := ReadDataRow(dataSecond, second.Offset)
-				if firstE.Timestamp > secondE.Timestamp {
-					flag = true
-					break
-				} else {
+				if firstE.Timestamp < secondE.Timestamp {
 					entry := ReadDataRow(dataSecond, second.Offset)
 					l.processEntry(entry, table, index)
-					flag2 = true
-					flag = true
-					break
 				}
+				flag = true
+				flag2 = true
+				break
 			}
 			itEntry := itFirst.GetNext()
 			entry = ReadDataRow(dataFirst, itEntry.Offset)
@@ -215,7 +211,6 @@ func (l *LSM) Compress(
 		}
 		if flag {
 			if flag2 {
-				itEntry := itFirst.GetNext()
 				entry = ReadDataRow(dataFirst, itEntry.Offset)
 			}
 			for itFirst.HasNext() {
@@ -256,10 +251,6 @@ func (l *LSM) Compress(
 }
 
 func (l *LSM) processEntry(entry Entry, table, index *os.File) {
-	// If it's deleted
-	if entry.Tombstone == 1 {
-		return
-	}
 	temp, _ := table.Seek(0, io.SeekCurrent)
 	// CRC 4 bajta
 	binary.Write(table, binary.LittleEndian, entry.CRC)
