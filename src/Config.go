@@ -1,9 +1,10 @@
 package src
 
 import (
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
+
+	"gopkg.in/yaml.v2"
 )
 
 type Conf struct {
@@ -16,13 +17,15 @@ type Conf struct {
 	TokenBucketMax                int64   `yaml:"tokenBucketMax"`
 	HllMinPrecision               int     `yaml:"hllMinPrecision"`
 	HllMaxPrecision               int     `yaml:"hllMaxPrecision"`
-	HllP                          int     `yaml:"hllP"`
-	CmsEpsilon                    float32 `yaml:"cmsEpsilon"`
-	CmsDelta                      float32 `yaml:"cmsDelta"`
+	HllP                          uint8   `yaml:"hllP"`
+	CmsEpsilon                    float64 `yaml:"cmsEpsilon"`
+	CmsDelta                      float64 `yaml:"cmsDelta"`
 	BloomFilterExpectedElementsL1 []int   `yaml:"bloomFilterExpectedElements"`
 	BloomFilterFalsePositive      float64 `yaml:"bloomFilterFalsePositive"`
-	LsmMaxLevels                     int     `yaml:"lsmMaxLevels"`
-	BlockSize						int `yaml:"blockSize"`
+	LsmMaxLevels                  int     `yaml:"lsmMaxLevels"`
+	LsmMaxArray                   []uint8 `yaml:"lsmMaxArray"`
+	LsmReqArray                   []uint8 `yaml:"lsmReqArray"`
+	BlockSize                     int     `yaml:"blockSize"`
 }
 
 type Selected struct {

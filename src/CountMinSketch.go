@@ -1,6 +1,7 @@
 package src
 
 import (
+	"bytes"
 	"encoding/gob"
 	"hash"
 	"math"
@@ -19,6 +20,13 @@ type CountMinSketch struct {
 }
 
 func NewCountMinSketch(epsilon, delta float64) *CountMinSketch {
+	if epsilon == 0 && delta == 0 {
+		epsilon = Config.CmsEpsilon
+		delta = Config.CmsDelta
+	} else {
+		epsilon = epsilon
+		delta = delta
+	}
 	cmsInstance := CountMinSketch{}
 	cmsInstance.M = cmsInstance.calculateM(epsilon)
 	cmsInstance.K = cmsInstance.calculateK(delta)
@@ -46,6 +54,16 @@ func (cms *CountMinSketch) Add(element string) {
 	hashed := cms.hash(element)
 	for row, column := range hashed {
 		cms.Memory[row][column] += 1
+	}
+}
+
+func (cms *CountMinSketch) Remove(element string) {
+	hashed := cms.hash(element)
+	for row, column := range hashed {
+		// Safety net just in case
+		if cms.Memory[row][column] != 0 {
+			cms.Memory[row][column] -= 1
+		}
 	}
 }
 
@@ -83,6 +101,23 @@ func EncodeCountMinSketch(cms *CountMinSketch, path string) {
 	encoder := gob.NewEncoder(file)
 	encoder.Encode(cms)
 	file.Close()
+}
+
+func CountMinSketchToByteArray(cms *CountMinSketch) []byte {
+	var buffer bytes.Buffer
+	enc := gob.NewEncoder(&buffer)
+	_ = enc.Encode(cms)
+	return buffer.Bytes()
+}
+
+func CountMinSketchFromByteArray(arr []byte) *CountMinSketch {
+	var buffer bytes.Buffer
+	buffer.Write(arr)
+	dec := gob.NewDecoder(&buffer)
+	var cms CountMinSketch
+	_ = dec.Decode(&cms)
+	cms.hashArray = cms.createHashFunctions(cms.K, cms.Seed)
+	return &cms
 }
 
 // Deserializing

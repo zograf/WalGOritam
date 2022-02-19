@@ -13,6 +13,8 @@ type Engine struct {
 	memTable    *Memtable
 	lsm         *LSM
 	cache       *Cache
+	hll         *HLL
+	cms         *CountMinSketch
 }
 
 func (engine *Engine) EnginePut(key, value string) {
@@ -148,14 +150,13 @@ func (engine *Engine) ForceFlush() {
 }
 
 func EngineInit() *Engine {
-
 	engine := Engine{}
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()
 	engine.wal = NewWal()
-	max := []uint8{6, 6, 6}
-	req := []uint8{2, 2, 2}
-	engine.lsm = NewLSM(max, req)
+	engine.lsm = NewLSM()
 	engine.cache = NewCache(Config.CacheSize)
+	engine.hll = NewHLL(0)
+	engine.cms = NewCountMinSketch(0, 0)
 	return &engine
 }
