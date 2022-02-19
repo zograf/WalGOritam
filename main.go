@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -27,16 +28,11 @@ func fileTest(path string, engine *src.Engine) {
 	for scanner.Scan() {
 		text := strings.ReplaceAll(scanner.Text(), "\n", "")
 		tokens := strings.Split(text, " ")
-		key := tokens[1]
-		if tokens[0] == "PUT" {
-			value := tokens[2]
-			engine.EnginePut(key, value)
-		} else if tokens[0] == "GET" {
-			fmt.Println(engine.EngineGet(key))
-		} else {
-			engine.EngineDelete(key)
+		err, _ := engine.ProcessRequest(tokens)
+		if err != nil {
+			errors.Unwrap(err)
 		}
-
+		fmt.Println("SUCCESS!")
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -47,12 +43,6 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
-	if _, err := os.Stat("res"); os.IsNotExist(err) {
-		os.Mkdir("res", 0777)
-	}
-	if _, err := os.Stat("wal"); os.IsNotExist(err) {
-		os.Mkdir("wal", 0777)
-	}
 	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
 	fileFlag := !false
@@ -72,25 +62,14 @@ func main() {
 				os.Exit(0)
 			}
 			tokens := strings.Split(text, " ")
-			if tokens[0] == "PUT" {
-				if len(tokens) == 3 {
-					engine.EnginePut(tokens[1], tokens[2])
-					continue
-				}
-			} else if tokens[0] == "GET" {
-				if len(tokens) == 2 {
-					val, found := engine.EngineGet(tokens[1])
-					fmt.Println(val, found)
-					continue
-				}
-			} else if tokens[0] == "DEL" {
-				if len(tokens) == 2 {
-					deleted := engine.EngineDelete(tokens[1])
-					fmt.Println(deleted)
-					continue
-				}
+			if tokens[0] != "GET" && tokens[0] != "PUT" && tokens[0] != "DEL" {
+				help()
+				continue
 			}
-			help()
+			err, _ := engine.ProcessRequest(tokens)
+			if err != nil {
+				errors.Unwrap(err)
+			}
 		}
 	}
 }

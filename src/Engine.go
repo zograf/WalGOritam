@@ -1,6 +1,7 @@
 package src
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -17,16 +18,45 @@ type Engine struct {
 	cms         *CountMinSketch
 }
 
-func (engine *Engine) EnginePut(key, value string) {
-	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0 {
-		fmt.Println("Invalid key")
-		return
+func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
+	if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
+		return errors.New("Invalid key"), nil
 	}
 	err := engine.tokenBucket.CheckBucket()
 	if err != nil {
-		fmt.Println("You have no tokens left!")
-		return
+		fmt.Println("There are no more tokens left")
+		return err, nil
 	}
+	if tokens[0] == "PUT" {
+		if len(tokens) == 3 {
+			err := engine.EnginePut(tokens[1], tokens[2])
+			return err, nil
+		} else {
+			return errors.New("Invalid input format"), nil
+		}
+	} else if tokens[0] == "GET" {
+		if len(tokens) == 2 {
+			val, found := engine.EngineGet(tokens[1])
+			if !found {
+				fmt.Println("Key not found")
+				return nil, nil
+			}
+			return nil, val
+		} else {
+			return errors.New("Invalid input format"), nil
+		}
+	} else if tokens[0] == "DEL" {
+		if len(tokens) == 2 {
+			engine.EngineDelete(tokens[1])
+			return nil, nil
+		} else {
+			return errors.New("Invalid input format"), nil
+		}
+	}
+	return errors.New("Invalid input format"), nil
+}
+
+func (engine *Engine) EnginePut(key, value string) error {
 	byteValue := []byte(value)
 	engine.wal.put(key, byteValue)
 	engine.wal.deleteSegments()
@@ -34,7 +64,7 @@ func (engine *Engine) EnginePut(key, value string) {
 	if flag {
 		engine.lsm.Run()
 	}
-	fmt.Println("SUCCESS! Key-Value pair { " + key + " : " + value + " }")
+	return nil
 }
 
 func (engine *Engine) EngineGet(key string) ([]byte, bool) {
@@ -131,14 +161,10 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 
 }
 
-func (engine *Engine) EngineDelete(key string) bool {
-	fmt.Println("DEL")
-
+func (engine *Engine) EngineDelete(key string) {
 	engine.wal.delete(key)
 	engine.cache.DeleteElement(key)
 	engine.memTable.Delete(key)
-
-	return true
 }
 
 func (engine *Engine) ForceFlush() {
@@ -150,13 +176,27 @@ func (engine *Engine) ForceFlush() {
 }
 
 func EngineInit() *Engine {
+	if _, err := os.Stat("res"); os.IsNotExist(err) {
+		os.Mkdir("res", 0777)
+	}
+	if _, err := os.Stat("wal"); os.IsNotExist(err) {
+		os.Mkdir("wal", 0777)
+	}
 	engine := Engine{}
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()
 	engine.wal = NewWal()
 	engine.lsm = NewLSM()
 	engine.cache = NewCache(Config.CacheSize)
-	engine.hll = NewHLL(0)
-	engine.cms = NewCountMinSketch(0, 0)
+	if _, err := os.Stat("res" + string(filepath.Separator) + "hll.gob"); os.IsNotExist(err) {
+		engine.hll = NewHLL(0)
+	} else {
+		engine.hll = DecodeHLL("res" + string(filepath.Separator) + "hll.gob")
+	}
+	if _, err := os.Stat("res" + string(filepath.Separator) + "cms.gob"); os.IsNotExist(err) {
+		engine.cms = NewCountMinSketch(0, 0)
+	} else {
+		engine.cms = DecodeCountMinSketch("res" + string(filepath.Separator) + "cms.gob")
+	}
 	return &engine
 }
