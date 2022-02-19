@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -28,7 +29,7 @@ func (engine *Engine) EnginePut(key, value string) {
 	byteValue := []byte(value)
 	engine.wal.put(key, byteValue)
 	engine.wal.deleteSegments()
-	flag := engine.memTable.Set(key, byteValue)
+	flag := engine.memTable.Set(key, byteValue, 0)
 	if flag {
 		engine.lsm.Run()
 	}
@@ -56,7 +57,20 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	var indexEntry *IndexEntry
 	var dataEntry Entry
 	var filter *BloomFilter
-	var biggestTimestampEntry Entry
+	var isBetween bool
+	var indexFile *os.File
+	biggestTimestampEntry := Entry{
+		CRC:       0,
+		Timestamp: 0,
+		Tombstone: 0,
+		ValueSize: 0,
+		key:       "",
+		KeySize:   0,
+		value:     nil,
+	}
+	var indexIt IndexIterator
+	fmt.Println(indexIt)
+	fmt.Println(indexFile)
 	found = false
 
 	for level := 1; level < Config.LsmMaxLevels; level++{
@@ -70,23 +84,35 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			if err != nil {
 				panic(err)
 			}
-			indexOffset, found = Search(key, file)
-			if !found {
+			indexOffset, isBetween = Search(key, file)
+			if !isBetween {
 				continue
 			}
-			indexEntry = ReadIndexRow(string(os.PathSeparator)+currentIndex[j], indexOffset)
-			dataEntry = ReadDataRow(string(os.PathSeparator)+currentData[j], indexEntry.Offset)
-			if dataEntry.Tombstone == 1 {
-				return nil, false
+			indexFile, err = os.OpenFile("res"+string(filepath.Separator)+currentIndex[j], os.O_RDWR, 0777)
+			if err != nil {
+				panic(err)
 			}
-			engine.cache.Put(key, val)
-			if dataEntry.Timestamp > biggestTimestampEntry.Timestamp{
-				biggestTimestampEntry = dataEntry
+			indexIt = IndexIterator{file: indexFile}
+			indexIt.PositionIterator(indexOffset)
+			for i := 0; i < Config.BlockSize; i++{
+				indexEntry = indexIt.GetNext()
+				if indexEntry.Key > key{
+					break
+				}
+				dataEntry = ReadDataRow(string(os.PathSeparator)+currentData[j], indexEntry.Offset)
+				if dataEntry.Tombstone == 1 {
+					return nil, false
+				}
+				if dataEntry.key == key && dataEntry.Timestamp > biggestTimestampEntry.Timestamp{
+					biggestTimestampEntry = dataEntry
+					found = true
+				}
 			}
 
 		}
 	}
 	if found{
+		//engine.cache.Put(key, val)
 		if biggestTimestampEntry.Tombstone == 1{
 			return nil, false
 		}else{

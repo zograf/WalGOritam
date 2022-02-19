@@ -13,3 +13,4 @@ cmsDelta: 0.01
 bloomFilterExpectedElements: [ 512, 1024, 2048, 4096, 8192, 16384, 32728, 65535 ]
 bloomFilterFalsePositive: 0.02
 lsmMaxLevels: 8
+blockSize: 16

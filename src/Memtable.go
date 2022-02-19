@@ -31,7 +31,7 @@ func (mt *Memtable) Delete(key string) {
 
 }
 
-func (mt *Memtable) Set(key string, val []byte) bool {
+func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
 	flag := false
 	if mt.size+uint16(binary.Size(key))+uint16(len(val)) >= mt.threshold {
 		flag = true
@@ -43,8 +43,8 @@ func (mt *Memtable) Set(key string, val []byte) bool {
 			sl:        &sl,
 		}
 	}
-	mt.size += 32 + uint16(len(val))
-	mt.sl.Set(key, val)
+	mt.size += uint16(binary.Size(key)) + uint16(len(val))
+	mt.sl.Set(key, val, tombstone)
 	return flag
 }
 
@@ -281,25 +281,25 @@ func NewMemTable() *Memtable {
 func Generate() {
 	mt := NewMemTable()
 
-	mt.Set("29", []byte("thrth"))
-	mt.Set("21", []byte("dqwd"))
-	mt.Set("23", []byte("rgrt"))
-	mt.Set("67", []byte("qwd"))
-	mt.Set("5657", []byte("ewf"))
-	mt.Set("232", []byte("dxwq"))
-	mt.Set("98", []byte("rge"))
-	mt.Set("222", []byte("nnf"))
-	mt.Set("2132", []byte("zxc"))
-	mt.Set("9877", []byte("scz"))
-	mt.Set("122", []byte("mnh"))
-	mt.Set("665", []byte("oip"))
-	mt.Set("1211", []byte("bnyy"))
-	mt.Set("132", []byte("zzzz"))
+	mt.Set("29", []byte("thrth"), 0)
+	mt.Set("21", []byte("dqwd"), 0)
+	mt.Set("23", []byte("rgrt"), 0)
+	mt.Set("67", []byte("qwd"), 0)
+	mt.Set("5657", []byte("ewf"), 0)
+	mt.Set("232", []byte("dxwq"), 0)
+	mt.Set("98", []byte("rge"), 0)
+	mt.Set("222", []byte("nnf"), 0)
+	mt.Set("2132", []byte("zxc"), 0)
+	mt.Set("9877", []byte("scz"), 0)
+	mt.Set("122", []byte("mnh"), 0)
+	mt.Set("665", []byte("oip"), 0)
+	mt.Set("1211", []byte("bnyy"), 0)
+	mt.Set("132", []byte("zzzz"), 0)
 	fmt.Println(mt.size)
 	var i int32
 	for i = 1; i < 100; i++ {
-		mt.Set(strconv.Itoa(int(i)), []byte("gfh"))
+		mt.Set(strconv.Itoa(int(i)), []byte("gfh"), 0)
 	}
-	mt.Set("73", []byte("asd"))
-	mt.Set("27", []byte("pera"))
+	mt.Set("73", []byte("asd"), 0)
+	mt.Set("27", []byte("pera"), 0)
 }

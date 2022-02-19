@@ -2,8 +2,10 @@ package src
 
 import (
 	"encoding/binary"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 func WriteIndexRow(key []byte, keySize uint8, offset uint32, indexF *os.File) {
@@ -83,6 +85,10 @@ func (mti *IndexIterator) GetNext() *IndexEntry {
 	return nil
 }
 
+func (mti *IndexIterator) PositionIterator(offset uint32){
+	mti.file.Seek(int64(offset), 0)
+}
+
 func ReadIndexRow(name string, offset uint32) *IndexEntry{
 	file, err := os.OpenFile("res"+string(filepath.Separator)+name, os.O_RDWR, 0777)
 	if err != nil {
@@ -129,7 +135,9 @@ func ReadIndex(name string) {
 	defer fl.Close()
 
 	it := IndexIterator{file: fl}
+	var i int = 0
 	for it.HasNext() {
-		it.GetNext()
+		fmt.Println(strconv.Itoa(i), " ", it.GetNext())
+		i++
 	}
 }

@@ -22,6 +22,7 @@ type Conf struct {
 	BloomFilterExpectedElementsL1 []int   `yaml:"bloomFilterExpectedElements"`
 	BloomFilterFalsePositive      float64 `yaml:"bloomFilterFalsePositive"`
 	LsmMaxLevels                     int     `yaml:"lsmMaxLevels"`
+	BlockSize						int `yaml:"blockSize"`
 }
 
 type Selected struct {

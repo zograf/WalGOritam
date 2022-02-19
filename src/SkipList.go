@@ -23,6 +23,7 @@ type SkipListNode struct {
 	Key   string
 	Value []byte
 	next  []*SkipListNode
+	Tombstone byte
 }
 
 func (s *SkipList) roll() int {
@@ -56,6 +57,7 @@ func MakeSkipList() SkipList {
 		next:  make([]*SkipListNode, 0),
 		Value: nil,
 		Key:   "inf",
+		Tombstone: 0,
 	}
 	rand.Seed(time.Now().Unix())
 	nextNodes := make([]*SkipListNode, 0)
@@ -64,6 +66,7 @@ func MakeSkipList() SkipList {
 		next:  nextNodes,
 		Value: nil,
 		Key:   "-inf",
+		Tombstone: 0,
 	}
 
 	sl := SkipList{
@@ -104,7 +107,7 @@ func GreaterEqual(key1 string, key2 string) bool {
 	}
 }
 
-func (sl *SkipList) Set(key string, val []byte) error{
+func (sl *SkipList) Set(key string, val []byte, tombstone byte) error{
 	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0{
 		return errors.New("invalid key input")
 	}
@@ -148,6 +151,7 @@ func (sl *SkipList) Set(key string, val []byte) error{
 		Key:   key,
 		Value: val,
 		next:  make([]*SkipListNode, lvl+1),
+		Tombstone: tombstone,
 	}
 
 	//prevezivanje sledecih cvorova i novog cvora
@@ -189,7 +193,7 @@ func (sl *SkipList) SearchNode(key string) *SkipListNode {
 		}
 	}
 
-	if node.Key == key {
+	if node.Key == key && node.Tombstone == 0{
 		return node
 	} else {
 		return nil

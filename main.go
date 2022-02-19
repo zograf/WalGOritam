@@ -41,6 +41,7 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
+	src.ReadIndex("L-2-1645273471144263Index.bin")
 	src.NewConf()
 	fileFlag := false
 	//src.TestCache()
