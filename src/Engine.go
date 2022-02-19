@@ -14,6 +14,8 @@ type Engine struct {
 	memTable    *Memtable
 	lsm         *LSM
 	cache       *Cache
+	hll         *HLL
+	cms         *CountMinSketch
 }
 
 func (engine *Engine) EnginePut(key, value string) {
@@ -71,7 +73,7 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	var indexIt IndexIterator
 	found = false
 
-	for level := 1; level < Config.LsmMaxLevels; level++{
+	for level := 1; level < Config.LsmMaxLevels; level++ {
 		currentData, currentIndex, currentSummary, currentFilter, _, _ = engine.lsm.GetDataIndexSummary(level)
 		for j := 0; j < len(currentData); j++ {
 			filter = DecodeBloomFilter("res" + string(os.PathSeparator) + currentFilter[j])
@@ -93,19 +95,19 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			}
 			indexIt = IndexIterator{file: indexFile}
 			indexIt.PositionIterator(indexOffset)
-			for i := 0; i < Config.BlockSize; i++{
-				if !indexIt.HasNext(){
+			for i := 0; i < Config.BlockSize; i++ {
+				if !indexIt.HasNext() {
 					break
 				}
 				indexEntry = indexIt.GetNext()
-				if indexEntry.Key > key{
+				if indexEntry.Key > key {
 					break
 				}
 				dataEntry = ReadDataRow(string(os.PathSeparator)+currentData[j], indexEntry.Offset)
 				if dataEntry.Tombstone == 1 {
 					return nil, false
 				}
-				if dataEntry.key == key && dataEntry.Timestamp > biggestTimestampEntry.Timestamp{
+				if dataEntry.key == key && dataEntry.Timestamp > biggestTimestampEntry.Timestamp {
 					biggestTimestampEntry = dataEntry
 					found = true
 				}
@@ -113,10 +115,10 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			indexFile.Close()
 		}
 	}
-	if found{
-		if biggestTimestampEntry.Tombstone == 1{
+	if found {
+		if biggestTimestampEntry.Tombstone == 1 {
 			return nil, false
-		}else{
+		} else {
 			engine.cache.Put(biggestTimestampEntry.key, biggestTimestampEntry.value)
 			return biggestTimestampEntry.value, true
 		}
@@ -195,7 +197,6 @@ func (engine *Engine) ForceFlush() {
 }
 
 func EngineInit() *Engine {
-
 	engine := Engine{}
 	engine.tokenBucket = NewTokenBucket()
 	engine.memTable = NewMemTable()
@@ -204,5 +205,6 @@ func EngineInit() *Engine {
 	req := []uint8{2, 2, 2}
 	engine.lsm = NewLSM(max, req)
 	engine.cache = NewCache(Config.CacheSize)
+	engine.hll = NewHLL()
 	return &engine
 }

@@ -1,6 +1,7 @@
 package src
 
 import (
+	"bytes"
 	"encoding/gob"
 	"hash"
 	"math"
@@ -9,11 +10,6 @@ import (
 	"time"
 
 	"github.com/spaolacci/murmur3"
-)
-
-const (
-	HLL_MIN_PRECISION = 4
-	HLL_MAX_PRECISION = 16
 )
 
 type HLL struct {
@@ -25,7 +21,11 @@ type HLL struct {
 
 func NewHLL(p uint8) *HLL {
 	hll := HLL{}
-	hll.P = p
+	if p == 0 {
+		hll.P = p
+	} else {
+		hll.P = uint8(Config.HllP)
+	}
 	hll.M = uint64(math.Pow(2, float64(p)))
 	hll.hashFunction = hll.createHashFunction()
 	hll.Registers = make([]uint8, hll.M)
@@ -57,7 +57,13 @@ func (hll *HLL) hash(element string) uint32 {
 
 func (hll *HLL) Add(element string) {
 	binaryRepresentation := strconv.FormatUint(uint64(hll.hash(element)), 2)
-	leading := binaryRepresentation[:hll.P]
+	var leading string
+	// Safety net
+	if len(binaryRepresentation) > int(hll.P) {
+		leading = binaryRepresentation[:hll.P]
+	} else {
+		leading = binaryRepresentation[:len(binaryRepresentation)-1]
+	}
 	bucketIndex, err := strconv.ParseUint(leading, 2, 32)
 	check(err)
 	bucketValue := uint8(0)
@@ -68,6 +74,23 @@ func (hll *HLL) Add(element string) {
 		bucketValue++
 	}
 	hll.Registers[bucketIndex] = bucketValue
+}
+
+func HLLToByteArray(hll *HLL) []byte {
+	var buffer bytes.Buffer
+	enc := gob.NewEncoder(&buffer)
+	_ = enc.Encode(hll)
+	return buffer.Bytes()
+}
+
+func HLLFromByteArray(arr []byte) *HLL {
+	var buffer bytes.Buffer
+	buffer.Write(arr)
+	dec := gob.NewDecoder(&buffer)
+	var hll HLL
+	_ = dec.Decode(&hll)
+	hll.hashFunction = hll.createHashFunction()
+	return &hll
 }
 
 // Serializing
