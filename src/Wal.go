@@ -71,10 +71,10 @@ func (wal *Wal) put(s string, data []byte) {
 	wal.WalBuffer = append(wal.WalBuffer, newEntry)
 }
 
-func (wal *Wal) delete(s string) {
+func (wal *Wal) delete(key string) {
 	newEntry := newWalEntry()
 	newEntry.Tombstone = 1
-	newEntry.put(s, nil)
+	newEntry.put(key, nil)
 	wal.WalBuffer = append(wal.WalBuffer, newEntry)
 }
 

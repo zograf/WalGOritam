@@ -20,9 +20,9 @@ type SkipList struct {
 }
 
 type SkipListNode struct {
-	Key   string
-	Value []byte
-	next  []*SkipListNode
+	Key       string
+	Value     []byte
+	next      []*SkipListNode
 	Tombstone byte
 }
 
@@ -54,18 +54,18 @@ func (sl *SkipList) Print() {
 
 func MakeSkipList() SkipList {
 	var lastNode SkipListNode = SkipListNode{
-		next:  make([]*SkipListNode, 0),
-		Value: nil,
-		Key:   "inf",
+		next:      make([]*SkipListNode, 0),
+		Value:     nil,
+		Key:       "inf",
 		Tombstone: 0,
 	}
 	rand.Seed(time.Now().Unix())
 	nextNodes := make([]*SkipListNode, 0)
 	nextNodes = append(nextNodes, &lastNode)
 	var firstNode SkipListNode = SkipListNode{
-		next:  nextNodes,
-		Value: nil,
-		Key:   "-inf",
+		next:      nextNodes,
+		Value:     nil,
+		Key:       "-inf",
 		Tombstone: 0,
 	}
 
@@ -107,8 +107,8 @@ func GreaterEqual(key1 string, key2 string) bool {
 	}
 }
 
-func (sl *SkipList) Set(key string, val []byte, tombstone byte) error{
-	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0{
+func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
+	if strings.Compare(key, "inf") == 0 || strings.Compare(key, "-inf") == 0 {
 		return errors.New("invalid key input")
 	}
 
@@ -148,9 +148,9 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error{
 
 	// pravi se novi cvor(lvl + 1 jer lvl moze biti 0)
 	newNode := SkipListNode{
-		Key:   key,
-		Value: val,
-		next:  make([]*SkipListNode, lvl+1),
+		Key:       key,
+		Value:     val,
+		next:      make([]*SkipListNode, lvl+1),
 		Tombstone: tombstone,
 	}
 
@@ -172,7 +172,7 @@ func reverseSlice(s []*SkipListNode) []*SkipListNode {
 }
 
 //nalazi vrednost cvora sa vrednoscu Key
-func (sl *SkipList) GetVal(key string) []byte {
+func (sl *SkipList) GetVal(key string) ([]byte, bool) {
 	h := sl.height
 	node := sl.Head
 	for i := h; i >= 0; i-- {
@@ -180,7 +180,11 @@ func (sl *SkipList) GetVal(key string) []byte {
 			node = node.next[i]
 		}
 	}
-	return node.Value
+	if node.Tombstone == 0 {
+		return node.Value, true
+	} else {
+		return nil, false
+	}
 }
 
 //nalazi cvor sa vrednoscu Key
@@ -193,16 +197,16 @@ func (sl *SkipList) SearchNode(key string) *SkipListNode {
 		}
 	}
 
-	if node.Key == key && node.Tombstone == 0{
+	if node.Key == key && node.Tombstone == 0 {
 		return node
 	} else {
 		return nil
 	}
 }
 
-func (sl *SkipList) Delete(key string) bool{
+func (sl *SkipList) Delete(key string) bool {
 	node := sl.SearchNode(key)
-	if node == nil{
+	if node == nil {
 		return false
 	}
 	node.Tombstone = 1

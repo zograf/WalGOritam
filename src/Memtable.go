@@ -20,14 +20,16 @@ type Memtable struct {
 	sl        *SkipList
 }
 
-func (mt *Memtable) Get(key string) []byte {
+func (mt *Memtable) Get(key string) ([]byte, bool) {
 	return mt.sl.GetVal(key)
+
 }
 
 func (mt *Memtable) Delete(key string) {
-	mt.size -= uint16(len(mt.Get(key)))
-	mt.size -= uint16(binary.Size(key))
-	mt.sl.Delete(key)
+	found := mt.sl.Delete(key)
+	if !found {
+		mt.Set(key, nil, 1)
+	}
 }
 
 func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
@@ -88,7 +90,7 @@ func (mt *Memtable) flush() {
 
 		CRC = CRC32(skipNode.Value)
 		Timestamp = uint64(time.Now().Unix())
-		Tombstone = 0
+		Tombstone = skipNode.Tombstone
 		ValueSize = uint8(binary.Size(skipNode.Value))
 		key = []byte(skipNode.Key)
 		KeySize = uint8(binary.Size(key))

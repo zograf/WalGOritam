@@ -23,14 +23,20 @@ func fileTest(path string, engine *src.Engine) {
 		panic(err)
 	}
 	defer file.Close()
-
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		text := strings.ReplaceAll(scanner.Text(), "\n", "")
 		tokens := strings.Split(text, " ")
 		key := tokens[1]
-		value := tokens[2]
-		engine.EnginePut(key, value)
+		if tokens[0] == "PUT" {
+			value := tokens[2]
+			engine.EnginePut(key, value)
+		} else if tokens[0] == "GET" {
+			fmt.Println(engine.EngineGet(key))
+		} else {
+			engine.EngineDelete(key)
+		}
+
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -43,7 +49,7 @@ func fileTest(path string, engine *src.Engine) {
 func main() {
 	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
-	fileFlag := true
+	fileFlag := !false
 	//src.TestCache()
 	// Engine initialization
 	engine := src.EngineInit()
