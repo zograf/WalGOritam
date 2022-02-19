@@ -60,8 +60,7 @@ func GenerateSummary(indexFile *os.File) {
 	WriteIndexRow([]byte(last.Key), last.KeySize, last.Offset, summaryFile)
 
 	for _, key := range sampleKeys {
-		WriteIndexRow([]byte(key.Key), key.KeySize, offset, summaryFile)
-		offset += uint32(last.KeySize) + 5
+		WriteIndexRow([]byte(key.Key), key.KeySize, key.Offset, summaryFile)
 	}
 	nowStr := strings.Replace(indexFile.Name(), "Index.bin", "", 1)
 	FormToc(nowStr)
