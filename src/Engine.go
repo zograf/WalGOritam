@@ -140,7 +140,11 @@ func (engine *Engine) EngineDelete(key string) bool {
 }
 
 func (engine *Engine) ForceFlush() {
-	engine.memTable.flush()
+	if engine.memTable.size > 0 {
+		engine.memTable.flush()
+		engine.lsm.Run()
+	}
+
 }
 
 func EngineInit() *Engine {
