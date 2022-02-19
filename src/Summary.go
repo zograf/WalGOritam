@@ -48,6 +48,9 @@ func GenerateSummary(indexFile *os.File) {
 		dataEntry = ReadDataRow(dataFileName, currentEntry.Offset)
 		data = append(data, dataEntry.value)
 	}
+	if sampleKeys[len(sampleKeys)-1].Key != currentEntry.Key {
+		sampleKeys = append(sampleKeys, currentEntry)
+	}
 
 	EncodeBloomFilter(bloom, nameFilter)
 	merkle := FormMerkle(data)
@@ -78,7 +81,7 @@ func Search(key string, summaryFile *os.File) (uint32, bool) {
 
 	for iter.HasNext() {
 		current := iter.GetNext()
-		if key >= previous.Key && key < current.Key {
+		if key >= previous.Key && key <= current.Key {
 			break
 		}
 		previous = current
