@@ -48,9 +48,9 @@ func fileTest(path string, engine *src.Engine) {
 }
 
 func main() {
-	src.ReadIndex("L-2-1645283639390404Index.bin")
+	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
-	fileFlag := true
+	fileFlag := false
 	//src.TestCache()
 	// Engine initialization
 	engine := src.EngineInit()

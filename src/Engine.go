@@ -89,7 +89,7 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 			}
 			hll := NewHLL(uint8(value))
 			byteArray := HLLToByteArray(hll)
-			engine.EnginePutHLLCMS(tokens[1], byteArray)
+			engine.EnginePutHLLCMS(tokens[1], byteArray, true)
 			return nil, nil
 		}
 	} else if tokens[0] == "PUT_CMS" {
@@ -104,7 +104,7 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 			}
 			cms := NewCountMinSketch(epsilon, delta)
 			byteArray := CountMinSketchToByteArray(cms)
-			engine.EnginePutHLLCMS(tokens[1], byteArray)
+			engine.EnginePutHLLCMS(tokens[1], byteArray, false)
 			return nil, nil
 		}
 
@@ -112,12 +112,18 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 	return errors.New("Invalid input format"), nil
 }
 
-func (engine *Engine) EnginePutHLLCMS(key string, value []byte) {
-	engine.wal.put(key, value)
+func (engine *Engine) EnginePutHLLCMS(key string, value []byte, hllFlag bool) {
+	var newKey string
+	if hllFlag {
+		newKey = "_HLL" + key
+	} else {
+		newKey = "_CMS" + key
+	}
+	engine.wal.put(newKey, value)
 	engine.wal.deleteSegments()
-	engine.hll.Add(key)
-	engine.cms.Add(key)
-	flag := engine.memTable.Set(key, value, 0)
+	engine.hll.Add(newKey)
+	engine.cms.Add(newKey)
+	flag := engine.memTable.Set(newKey, value, 0)
 	if flag {
 		engine.lsm.Run()
 	}
@@ -138,7 +144,6 @@ func (engine *Engine) EnginePut(key, value string) {
 func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	val, deleted := engine.memTable.Get(key)
 	if !deleted {
-		fmt.Println("Value deleted")
 		return nil, false
 	}
 

@@ -178,7 +178,11 @@ func (sl *SkipList) GetVal(key string) ([]byte, bool) {
 		}
 	}
 	if node.Tombstone == 0 {
-		return node.Value, true
+		if node.Key == key {
+			return node.Value, true
+		} else {
+			return nil, false
+		}
 	} else {
 		return nil, false
 	}
