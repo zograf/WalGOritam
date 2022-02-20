@@ -242,7 +242,8 @@ func (engine *Engine) ForceFlush() {
 		engine.memTable.flush()
 		engine.lsm.Run()
 	}
-
+	EncodeHLL(engine.hll, "res"+string(filepath.Separator)+"hll.gob")
+	EncodeCountMinSketch(engine.cms, "res"+string(filepath.Separator)+"cms.gob")
 }
 
 func EngineInit() *Engine {

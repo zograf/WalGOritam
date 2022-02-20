@@ -164,6 +164,7 @@ func ReadIndexRow(name string, offset uint32) *IndexEntry {
 	//fmt.Println("Offset")
 	//fmt.Println(Offset)
 	//fmt.Println("-------------------------------------------")
+	file.Close()
 	return &IndexEntry{
 		KeySize: KeySize,
 		Key:     Key,

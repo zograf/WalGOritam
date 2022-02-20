@@ -154,5 +154,5 @@ func (hll *HLL) Estimate() float64 {
 	} else if estimation > 1/30.0*math.Pow(2.0, 32.0) { // do large range correction
 		estimation = -math.Pow(2.0, 32.0) * math.Log(1.0-estimation/math.Pow(2.0, 32.0))
 	}
-	return estimation
+	return estimation * 2
 }

@@ -35,13 +35,15 @@ func (mt *Memtable) Delete(key string) {
 func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
 	flag := false
 	if mt.size+uint16(binary.Size([]byte(key)))+uint16(len(val)) >= mt.threshold {
-		flag = true
-		mt.flush()
-		sl := MakeSkipList()
-		*mt = Memtable{
-			threshold: mt.threshold,
-			size:      0,
-			sl:        &sl,
+		if mt.sl.Size != 0 {
+			flag = true
+			mt.flush()
+			sl := MakeSkipList()
+			*mt = Memtable{
+				threshold: mt.threshold,
+				size:      0,
+				sl:        &sl,
+			}
 		}
 	}
 	mt.size += uint16(binary.Size([]byte(key))) + uint16(len(val))
@@ -78,7 +80,7 @@ func (mt *Memtable) flush() {
 	var CRC uint32
 	var Timestamp uint64
 	var Tombstone byte
-	var ValueSize uint8
+	var ValueSize uint32
 	var key []byte
 	var KeySize uint8
 	var value []byte
@@ -91,7 +93,7 @@ func (mt *Memtable) flush() {
 		CRC = CRC32(skipNode.Value)
 		Timestamp = uint64(time.Now().Unix())
 		Tombstone = skipNode.Tombstone
-		ValueSize = uint8(binary.Size(skipNode.Value))
+		ValueSize = uint32(binary.Size(skipNode.Value))
 		key = []byte(skipNode.Key)
 		KeySize = uint8(binary.Size(key))
 		value = skipNode.Value
@@ -117,7 +119,6 @@ func (mt *Memtable) flush() {
 		indexEntryCount++
 	}
 	GenerateSummary(indexF)
-
 }
 
 func FormToc(nowStr string) {
@@ -158,7 +159,7 @@ type Entry struct {
 	CRC       uint32
 	Timestamp uint64
 	Tombstone byte
-	ValueSize uint8
+	ValueSize uint32
 	key       string
 	KeySize   uint8
 	value     []byte
@@ -168,7 +169,7 @@ func ReadDataRow(name string, offset uint32) Entry {
 	var CRC uint32
 	var Timestamp uint64
 	var Tombstone byte
-	var ValueSize uint8
+	var ValueSize uint32
 	var Key string
 	var KeySize uint8
 	var value []byte
@@ -221,12 +222,12 @@ func ReadDataRow(name string, offset uint32) Entry {
 	//fmt.Println("Key size")
 	//fmt.Println(KeySize)
 
-	data5 := make([]byte, 1)
+	data5 := make([]byte, 4)
 	_, err = file.Read(data5)
 	if err != nil {
 		panic(err)
 	}
-	ValueSize = data5[0]
+	ValueSize = binary.LittleEndian.Uint32(data5)
 	//fmt.Println("Value size")
 	//fmt.Println(ValueSize)
 

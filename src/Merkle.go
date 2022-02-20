@@ -35,7 +35,6 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 		h.Write(data)
 		hashVal = h.Sum(nil)
 		hashes[i] = hashVal
-
 		queue.Enqueue(&Node{
 			left:  nil,
 			right: nil,

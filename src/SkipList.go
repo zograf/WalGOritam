@@ -3,12 +3,9 @@ package src
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
-)
-
-import (
-	"math/rand"
 )
 
 type SkipList struct {
@@ -159,7 +156,7 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
 		newNode.next[i] = levelPath[i].next[i]
 		levelPath[i].next[i] = &newNode
 	}
-	sl.Size += 64 + len(val)
+	sl.Size++
 	return nil
 }
 

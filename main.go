@@ -22,6 +22,7 @@ func help() {
 }
 
 func fileTest(path string, engine *src.Engine) {
+	i := 0
 	file, err := os.Open(path)
 	if err != nil {
 		panic(err)
@@ -36,19 +37,20 @@ func fileTest(path string, engine *src.Engine) {
 			fmt.Println(err)
 		}
 		fmt.Println(value)
+		fmt.Println(i)
+		i++
 	}
 
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-
 	engine.ForceFlush()
 }
 
 func main() {
 	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
-	fileFlag := false
+	fileFlag := true
 	//src.TestCache()
 	// Engine initialization
 	engine := src.EngineInit()
@@ -65,7 +67,11 @@ func main() {
 				os.Exit(0)
 			}
 			tokens := strings.Split(text, " ")
-			if tokens[0] != "GET" && tokens[0] != "PUT" && tokens[0] != "DEL" {
+			// GET, PUT, DEL, GET_REQ_PER_KEY, GET_TOTAL_KEYS
+			if tokens[0] != "GET" && tokens[0] != "PUT" && tokens[0] != "DEL" &&
+				tokens[0] != "GET_REQ_PER_KEY" && tokens[0] != "GET_TOTAL_KEYS" &&
+				tokens[0] != "PUT_HLL" && tokens[0] != "PUT_CMS" {
+
 				help()
 				continue
 			}

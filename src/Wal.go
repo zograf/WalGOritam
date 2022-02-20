@@ -123,6 +123,7 @@ func (wal *Wal) dump() bool {
 		wal.inCurrentFile++
 		if wal.inCurrentFile >= wal.entriesPerFile {
 			wal.currentFile++
+			appendFile.Close()
 			appendFile, _ = os.OpenFile(PATH+strconv.Itoa(int(wal.currentFile))+".gob", os.O_RDWR|os.O_CREATE, 0644)
 		}
 	}
