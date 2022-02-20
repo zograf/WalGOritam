@@ -194,9 +194,6 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 					break
 				}
 				dataEntry = ReadDataRow(string(os.PathSeparator)+currentData[j], indexEntry.Offset)
-				if dataEntry.Tombstone == 1 {
-					return nil, false
-				}
 				if dataEntry.key == key && dataEntry.Timestamp > biggestTimestampEntry.Timestamp {
 					biggestTimestampEntry = dataEntry
 					found = true
