@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const BLOCKSIZE = 16
+const BLOCKSIZE = 20
 
 //write last then normal input
 func GenerateSummary(indexFile *os.File) {
@@ -39,9 +39,17 @@ func GenerateSummary(indexFile *os.File) {
 		currentEntry = iter.GetNext()
 		bloom.Add(currentEntry.Key)
 		if i%BLOCKSIZE == 0 {
-			sampleKeys = append(sampleKeys, currentEntry)
+			//fmt.Println(currentEntry.Offset)
+			//fmt.Println(offset)
+			copyEntry := IndexEntry{
+				KeySize: currentEntry.KeySize,
+				Key:     currentEntry.Key,
+				Offset:  currentEntry.Offset,
+			}
+			sampleKeys = append(sampleKeys, &copyEntry)
 			sampleKeys[len(sampleKeys)-1].Offset = offset
 		}
+		//fmt.Println(currentEntry.KeySize)
 		offset += uint32(currentEntry.KeySize) + 5
 		i++
 
