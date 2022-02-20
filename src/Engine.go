@@ -201,6 +201,10 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			}
 			indexFile.Close()
 		}
+		// if it is found on lower level there is no need to look on upper ones
+		if found{
+			break
+		}
 	}
 	if found {
 		if biggestTimestampEntry.Tombstone == 1 {
