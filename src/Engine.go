@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -19,6 +20,23 @@ type Engine struct {
 }
 
 func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
+	if tokens[0] == "GET_TOTAL_KEYS" {
+		if len(tokens) == 1 {
+			value := engine.hll.Estimate()
+			fmt.Println(value)
+			return nil, nil
+		} else {
+			return errors.New("Invalid key"), nil
+		}
+	} else if tokens[0] == "GET_REQ_PER_KEY" {
+		if len(tokens) == 2 {
+			value := engine.cms.Find(tokens[1])
+			fmt.Println(value)
+			return nil, nil
+		} else {
+			return errors.New("Invalid key"), nil
+		}
+	}
 	if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
 		return errors.New("Invalid key"), nil
 	}
@@ -29,8 +47,7 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 	}
 	if tokens[0] == "PUT" {
 		if len(tokens) == 3 {
-			err := engine.EnginePut(tokens[1], tokens[2])
-			return err, nil
+			engine.EnginePut(tokens[1], tokens[2])
 		} else {
 			return errors.New("Invalid input format"), nil
 		}
@@ -52,19 +69,58 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 		} else {
 			return errors.New("Invalid input format"), nil
 		}
+	} else if tokens[0] == "PUT_HLL" {
+		if len(tokens) == 3 {
+			value, err := strconv.ParseUint(tokens[2], 10, 8)
+			if err != nil {
+				return err, nil
+			}
+			hll := NewHLL(uint8(value))
+			byteArray := HLLToByteArray(hll)
+			engine.EnginePutHLLCMS(tokens[1], byteArray)
+			return nil, nil
+		}
+	} else if tokens[0] == "PUT_CMS" {
+		if len(tokens) == 4 {
+			epsilon, err := strconv.ParseFloat(tokens[2], 64)
+			if err != nil {
+				return err, nil
+			}
+			delta, err := strconv.ParseFloat(tokens[3], 64)
+			if err != nil {
+				return err, nil
+			}
+			cms := NewCountMinSketch(epsilon, delta)
+			byteArray := CountMinSketchToByteArray(cms)
+			engine.EnginePutHLLCMS(tokens[1], byteArray)
+			return nil, nil
+		}
+
 	}
 	return errors.New("Invalid input format"), nil
 }
 
-func (engine *Engine) EnginePut(key, value string) error {
+func (engine *Engine) EnginePutHLLCMS(key string, value []byte) {
+	engine.wal.put(key, value)
+	engine.wal.deleteSegments()
+	engine.hll.Add(key)
+	engine.cms.Add(key)
+	flag := engine.memTable.Set(key, value, 0)
+	if flag {
+		engine.lsm.Run()
+	}
+}
+
+func (engine *Engine) EnginePut(key, value string) {
 	byteValue := []byte(value)
 	engine.wal.put(key, byteValue)
 	engine.wal.deleteSegments()
+	engine.hll.Add(key)
+	engine.cms.Add(key)
 	flag := engine.memTable.Set(key, byteValue, 0)
 	if flag {
 		engine.lsm.Run()
 	}
-	return nil
 }
 
 func (engine *Engine) EngineGet(key string) ([]byte, bool) {
@@ -165,6 +221,7 @@ func (engine *Engine) EngineDelete(key string) {
 	engine.wal.delete(key)
 	engine.cache.DeleteElement(key)
 	engine.memTable.Delete(key)
+	engine.cms.Remove(key)
 }
 
 func (engine *Engine) ForceFlush() {
