@@ -34,7 +34,7 @@ func (mt *Memtable) Delete(key string) {
 
 func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
 	flag := false
-	if mt.size+uint16(binary.Size(key))+uint16(len(val)) >= mt.threshold {
+	if mt.size+uint16(binary.Size([]byte(key)))+uint16(len(val)) >= mt.threshold {
 		flag = true
 		mt.flush()
 		sl := MakeSkipList()
@@ -44,7 +44,7 @@ func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
 			sl:        &sl,
 		}
 	}
-	mt.size += uint16(binary.Size(key)) + uint16(len(val))
+	mt.size += uint16(binary.Size([]byte(key))) + uint16(len(val))
 	mt.sl.Set(key, val, tombstone)
 	return flag
 }

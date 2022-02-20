@@ -20,6 +20,9 @@ type Engine struct {
 }
 
 func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
+	if len(tokens) == 0 {
+		return errors.New("Invalid input"), nil
+	}
 	if tokens[0] == "GET_TOTAL_KEYS" {
 		if len(tokens) == 1 {
 			value := engine.hll.Estimate()
@@ -37,34 +40,43 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 			return errors.New("Invalid key"), nil
 		}
 	}
-	if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
-		return errors.New("Invalid key"), nil
-	}
 	err := engine.tokenBucket.CheckBucket()
 	if err != nil {
-		fmt.Println("There are no more tokens left")
 		return err, nil
 	}
 	if tokens[0] == "PUT" {
 		if len(tokens) == 3 {
+			if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
+				return errors.New("Invalid key"), nil
+			}
 			engine.EnginePut(tokens[1], tokens[2])
+			fmt.Println("Put successful!")
+			return nil, nil
 		} else {
 			return errors.New("Invalid input format"), nil
 		}
 	} else if tokens[0] == "GET" {
 		if len(tokens) == 2 {
+			if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
+				return errors.New("Invalid key"), nil
+			}
 			val, found := engine.EngineGet(tokens[1])
 			if !found {
 				fmt.Println("Key not found")
 				return nil, nil
 			}
+			fmt.Println("Key found!")
 			return nil, val
 		} else {
 			return errors.New("Invalid input format"), nil
 		}
 	} else if tokens[0] == "DEL" {
 		if len(tokens) == 2 {
+			if strings.Compare(tokens[1], "inf") == 0 || strings.Compare(tokens[1], "-inf") == 0 {
+				return errors.New("Invalid key"), nil
+			}
 			engine.EngineDelete(tokens[1])
+			fmt.Println("Key deleted!")
 			return nil, nil
 		} else {
 			return errors.New("Invalid input format"), nil
@@ -124,7 +136,6 @@ func (engine *Engine) EnginePut(key, value string) {
 }
 
 func (engine *Engine) EngineGet(key string) ([]byte, bool) {
-	fmt.Println("GET")
 	val, deleted := engine.memTable.Get(key)
 	if !deleted {
 		fmt.Println("Value deleted")
@@ -138,6 +149,7 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 	if val != nil {
 		return val, true
 	}
+	engine.cms.Add(key)
 	var currentData []string
 	var currentIndex []string
 	var currentSummary []string
@@ -202,7 +214,7 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 			indexFile.Close()
 		}
 		// if it is found on lower level there is no need to look on upper ones
-		if found{
+		if found {
 			break
 		}
 	}
@@ -219,10 +231,10 @@ func (engine *Engine) EngineGet(key string) ([]byte, bool) {
 }
 
 func (engine *Engine) EngineDelete(key string) {
+	engine.cms.Add(key)
 	engine.wal.delete(key)
 	engine.cache.DeleteElement(key)
 	engine.memTable.Delete(key)
-	engine.cms.Remove(key)
 }
 
 func (engine *Engine) ForceFlush() {

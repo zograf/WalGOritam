@@ -19,13 +19,14 @@ type CountMinSketch struct {
 	hashArray []hash.Hash32
 }
 
-func NewCountMinSketch(epsilon, delta float64) *CountMinSketch {
-	if epsilon == 0 && delta == 0 {
+func NewCountMinSketch(ep, del float64) *CountMinSketch {
+	var epsilon, delta float64
+	if ep == 0 && del == 0 {
 		epsilon = Config.CmsEpsilon
 		delta = Config.CmsDelta
 	} else {
-		epsilon = epsilon
-		delta = delta
+		epsilon = ep
+		delta = del
 	}
 	cmsInstance := CountMinSketch{}
 	cmsInstance.M = cmsInstance.calculateM(epsilon)

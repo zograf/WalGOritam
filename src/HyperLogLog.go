@@ -22,11 +22,11 @@ type HLL struct {
 func NewHLL(p uint8) *HLL {
 	hll := HLL{}
 	if p == 0 {
-		hll.P = p
-	} else {
 		hll.P = uint8(Config.HllP)
+	} else {
+		hll.P = p
 	}
-	hll.M = uint64(math.Pow(2, float64(p)))
+	hll.M = uint64(math.Pow(2, float64(hll.P)))
 	hll.hashFunction = hll.createHashFunction()
 	hll.Registers = make([]uint8, hll.M)
 	return &hll
@@ -59,6 +59,7 @@ func (hll *HLL) Add(element string) {
 	binaryRepresentation := strconv.FormatUint(uint64(hll.hash(element)), 2)
 	var leading string
 	// Safety net
+
 	if len(binaryRepresentation) > int(hll.P) {
 		leading = binaryRepresentation[:hll.P]
 	} else {

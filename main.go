@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -14,6 +13,10 @@ func help() {
 	fmt.Println("Usage: PUT <key> <value>")
 	fmt.Println("       GET <key>")
 	fmt.Println("       DEL <key>")
+	fmt.Println("       PUT_HLL <key> <p>")
+	fmt.Println("       PUT_CMS <key> <epsilon> <delta>")
+	fmt.Println("       GET_TOTAL_KEYS")
+	fmt.Println("       GET_REQ_PER_KEY <key>")
 	fmt.Println("")
 	fmt.Println("Quit:  EXIT")
 }
@@ -28,11 +31,11 @@ func fileTest(path string, engine *src.Engine) {
 	for scanner.Scan() {
 		text := strings.ReplaceAll(scanner.Text(), "\n", "")
 		tokens := strings.Split(text, " ")
-		err, _ := engine.ProcessRequest(tokens)
+		err, value := engine.ProcessRequest(tokens)
 		if err != nil {
-			errors.Unwrap(err)
+			fmt.Println(err)
 		}
-		fmt.Println("SUCCESS!")
+		fmt.Println(value)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -45,7 +48,7 @@ func fileTest(path string, engine *src.Engine) {
 func main() {
 	//src.ReadIndex("L-2-1645283639390404Index.bin")
 	src.NewConf()
-	fileFlag := !false
+	fileFlag := false
 	//src.TestCache()
 	// Engine initialization
 	engine := src.EngineInit()
@@ -66,10 +69,11 @@ func main() {
 				help()
 				continue
 			}
-			err, _ := engine.ProcessRequest(tokens)
+			err, value := engine.ProcessRequest(tokens)
 			if err != nil {
-				errors.Unwrap(err)
+				fmt.Println(err)
 			}
+			fmt.Println(value)
 		}
 	}
 }
