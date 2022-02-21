@@ -116,25 +116,23 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
 		for Greater(key, node.next[i].Key) {
 			node = node.next[i]
 		}
-		// cuva se putanja kojom se islo, odnosno poslednji(skroz desno) cvor kojim smo se kretali kroz listu
-		//na svakom nivou, bice korisno kasnije
+		// we save path where we went, that is the last or the most right node on each level, will be useful in future
 		levelPath = append(levelPath, node)
 	}
 
-	//okrene se redosled putanje posto Go nema prepend i krecemo od visine 0
+	// we change the order of path since Go doesn't have prepend and we start from height zero
 	levelPath = reverseSlice(levelPath)
 
-	//ukoliko taj kljuc vec postoji samo se menja vrednost
+	// if key exists we just change the value
 	if levelPath[0].next[0].Key == key {
 		levelPath[0].next[0].Value = val
 		return nil
 	}
 
-	//uzima se nasumicna vrednost za nivo propagacije
+	// we take random number for propagation level
 	lvl := sl.roll()
-	//fmt.Println(lvl)
 
-	// dodaju se potrebne liste koje povezuju head i Tail ukoliko je visina veca od predjasnje
+	// we add required empty lists that didn't exist, that connect Head and Tail if height is bigger than previous
 	if lvl > sl.height {
 		for i := sl.height + 1; i <= lvl; i++ {
 			sl.Head.next = append(sl.Head.next, sl.Tail)
@@ -143,7 +141,7 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
 		}
 	}
 
-	// pravi se novi cvor(lvl + 1 jer lvl moze biti 0)
+	// we make new node(lvl + 1 because lvl can be 0)
 	newNode := SkipListNode{
 		Key:       key,
 		Value:     val,
@@ -151,7 +149,7 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
 		Tombstone: tombstone,
 	}
 
-	//prevezivanje sledecih cvorova i novog cvora
+	//inserting between previous and next nodes
 	for i := 0; i <= lvl; i++ {
 		newNode.next[i] = levelPath[i].next[i]
 		levelPath[i].next[i] = &newNode
@@ -160,7 +158,7 @@ func (sl *SkipList) Set(key string, val []byte, tombstone byte) error {
 	return nil
 }
 
-//okrece elemente u slice-u u obrnutom redosledu
+//reversing the order of slice
 func reverseSlice(s []*SkipListNode) []*SkipListNode {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
@@ -168,7 +166,7 @@ func reverseSlice(s []*SkipListNode) []*SkipListNode {
 	return s
 }
 
-//nalazi vrednost cvora sa vrednoscu Key
+// we find value of node with specified key
 func (sl *SkipList) GetVal(key string) ([]byte, bool) {
 	h := sl.height
 	node := sl.Head
@@ -188,7 +186,7 @@ func (sl *SkipList) GetVal(key string) ([]byte, bool) {
 	}
 }
 
-//nalazi cvor sa vrednoscu Key
+//we find node with specified key
 func (sl *SkipList) SearchNode(key string) *SkipListNode {
 	h := sl.height
 	node := sl.Head

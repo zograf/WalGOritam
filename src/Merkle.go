@@ -32,6 +32,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 
 	hashes := make([][]byte, len(dataArray))
 	for i, data := range dataArray {
+		h.Reset()
 		h.Write(data)
 		hashVal = h.Sum(nil)
 		hashes[i] = hashVal
@@ -69,6 +70,7 @@ func FormMerkle(dataArray [][]byte) MerkleTree {
 			} else {
 				child2 = queue.Dequeue()
 				// we combine bytes and then hash them
+				h.Reset()
 				h.Write(append(child1.hash, child2.hash...))
 				hashVal = h.Sum(nil)
 				parentNodes[i] = &Node{
