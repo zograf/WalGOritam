@@ -16,11 +16,13 @@ type HLL struct {
 	M            uint64
 	P            uint8
 	Registers    []uint8
+	Seed         int64
 	hashFunction hash.Hash32
 }
 
 func NewHLL(p uint8) *HLL {
 	hll := HLL{}
+	hll.Seed = time.Now().Unix()
 	if p == 0 {
 		hll.P = uint8(Config.HllP)
 	} else {
@@ -43,7 +45,7 @@ func (hll *HLL) emptyCount() int {
 }
 
 func (hll *HLL) createHashFunction() hash.Hash32 {
-	seed := time.Now().Unix()
+	seed := hll.Seed
 	hashFunction := murmur3.New32WithSeed(uint32(seed))
 	return hashFunction
 }

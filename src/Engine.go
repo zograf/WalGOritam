@@ -99,7 +99,7 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 					hll := HLLFromByteArray(hllByteArray)
 					hll.Add(key)
 					hllByteArray = HLLToByteArray(hll)
-					engine.EnginePutHLLCMS(tokens[0], hllByteArray, true)
+					engine.EnginePutHLLCMS(tokens[1], hllByteArray, true)
 					return nil, nil
 				} else if tokens[2] == "ESTIMATE" {
 					hllByteArray, err := engine.EngineGet("_HLL" + tokens[1])

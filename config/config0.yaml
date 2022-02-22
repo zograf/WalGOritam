@@ -8,8 +8,8 @@ tokenBucketMax: 99999
 hllMinPrecision: 4
 hllMaxPrecision: 16
 hllP: 20
-cmsEpsilon: 0.0001
-cmsDelta: 0.0001
+cmsEpsilon: 0.000001
+cmsDelta: 0.000001
 bloomFilterExpectedElements: [ 512, 1024, 2048, 4096, 8192, 16384, 32728, 65535, 131070, 262140 ]
 bloomFilterFalsePositive: 0.02
 lsmMaxLevels: 10
