@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const THRESHOLD = 10000
-
 type Memtable struct {
 	threshold uint16
 	size      uint16

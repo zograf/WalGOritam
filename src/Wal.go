@@ -12,11 +12,8 @@ import (
 )
 
 const (
-	THRESHOLD_DEFAULT        = 10
-	ENTRIES_PER_FILE_DEFAULT = 10
-	PATH                     = "wal" + string(filepath.Separator) + "WAL"
-	DIR                      = "wal" + string(filepath.Separator)
-	LOW_WATERMARK            = 2
+	PATH = "wal" + string(filepath.Separator) + "WAL"
+	DIR  = "wal" + string(filepath.Separator)
 )
 
 type Wal struct {
