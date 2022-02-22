@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-const BLOCKSIZE = 20
-
 //write last then normal input
 func GenerateSummary(indexFile *os.File) {
 	name := strings.Replace(indexFile.Name(), "Index", "Summary", 1)
@@ -38,7 +36,7 @@ func GenerateSummary(indexFile *os.File) {
 	for iter.HasNext() {
 		currentEntry = iter.GetNext()
 		bloom.Add(currentEntry.Key)
-		if i%BLOCKSIZE == 0 {
+		if i % Config.BlockSize == 0 {
 			//fmt.Println(currentEntry.Offset)
 			//fmt.Println(offset)
 			copyEntry := IndexEntry{
