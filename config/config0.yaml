@@ -3,8 +3,8 @@ walEntriesPerFile: 10
 walLowWatermark: 5
 memtableThreshold: 1000
 cacheSize: 100
-tokenBucketInterval: 60
-tokenBucketMax: 99999
+tokenBucketInterval: 5
+tokenBucketMax: 1000
 hllMinPrecision: 4
 hllMaxPrecision: 16
 hllP: 20

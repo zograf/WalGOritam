@@ -9,26 +9,24 @@ import (
 
 // MAX_BUCKET - Max amount of tokens
 // INTERVAL   - Reset time (in seconds)
-const (
-	MAX_BUCKET = 9999999
-	INTERVAL   = 60
-)
 
 type TokenBucket struct {
 	Bucket    int64
+	Interval  int64
 	Timestamp int64
 }
 
 func NewTokenBucket() *TokenBucket {
 	tb := TokenBucket{}
-	tb.Bucket = MAX_BUCKET
+	tb.Bucket = Config.TokenBucketMax
+	tb.Interval = Config.TokenBucketInterval
 	tb.Timestamp = time.Now().Unix()
 	return &tb
 }
 
 func (tb *TokenBucket) checkTimeStamp() bool {
 	// Check if tb needs to be reset
-	if time.Now().Unix()-tb.Timestamp >= INTERVAL {
+	if time.Now().Unix()-tb.Timestamp >= tb.Interval {
 		return true
 	}
 	return false
@@ -37,7 +35,7 @@ func (tb *TokenBucket) checkTimeStamp() bool {
 func (tb *TokenBucket) CheckBucket() error {
 	// Check if timestamp needs to be updated
 	if tb.checkTimeStamp() {
-		tb.Bucket = MAX_BUCKET
+		tb.Bucket = Config.TokenBucketMax
 		tb.Timestamp = time.Now().Unix()
 	}
 	if tb.Bucket == 0 {
