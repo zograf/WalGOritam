@@ -58,16 +58,6 @@ func (cms *CountMinSketch) Add(element string) {
 	}
 }
 
-func (cms *CountMinSketch) Remove(element string) {
-	hashed := cms.hash(element)
-	for row, column := range hashed {
-		// Safety net just in case
-		if cms.Memory[row][column] != 0 {
-			cms.Memory[row][column] -= 1
-		}
-	}
-}
-
 func (cms *CountMinSketch) Find(element string) uint32 {
 	hashed := cms.hash(element)
 	min := uint32(math.MaxUint32)

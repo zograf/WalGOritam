@@ -85,7 +85,34 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 		if len(tokens) == 3 {
 			value, err := strconv.ParseUint(tokens[2], 10, 8)
 			if err != nil {
-				return err, nil
+				if strings.Contains(tokens[2], "ADD") {
+					key := strings.Trim(tokens[2], "ADD()")
+					if strings.Compare(key, "inf") == 0 ||
+						strings.Compare(key, "-inf") == 0 ||
+						len(key) == 0 {
+						return errors.New("Invalid key"), nil
+					}
+					hllByteArray, err := engine.EngineGet("_HLL" + tokens[1])
+					if err == false {
+						return errors.New("HLL with that key doesn't exist"), nil
+					}
+					hll := HLLFromByteArray(hllByteArray)
+					hll.Add(key)
+					hllByteArray = HLLToByteArray(hll)
+					engine.EnginePutHLLCMS(tokens[0], hllByteArray, true)
+					return nil, nil
+				} else if tokens[2] == "ESTIMATE" {
+					hllByteArray, err := engine.EngineGet("_HLL" + tokens[1])
+					if err == false {
+						return errors.New("HLL with that key doesn't exist"), nil
+					}
+					hll := HLLFromByteArray(hllByteArray)
+					estimate := hll.Estimate()
+					fmt.Println(estimate)
+					return nil, nil
+				} else {
+					return err, nil
+				}
 			}
 			hll := NewHLL(uint8(value))
 			byteArray := HLLToByteArray(hll)
@@ -93,7 +120,43 @@ func (engine *Engine) ProcessRequest(tokens []string) (error, []byte) {
 			return nil, nil
 		}
 	} else if tokens[0] == "PUT_CMS" {
-		if len(tokens) == 4 {
+		if len(tokens) == 3 {
+			if strings.Contains(tokens[2], "ADD") {
+				key := strings.Trim(tokens[2], "ADD()")
+				if strings.Compare(key, "inf") == 0 ||
+					strings.Compare(key, "-inf") == 0 ||
+					len(key) == 0 {
+					return errors.New("Invalid key"), nil
+				}
+				cmsByteArray, err := engine.EngineGet("_CMS" + tokens[1])
+				if err == false {
+					return errors.New("CMS with that key doesn't exist"), nil
+				}
+				cms := CountMinSketchFromByteArray(cmsByteArray)
+				cms.Add(key)
+				cmsByteArray = CountMinSketchToByteArray(cms)
+				engine.EnginePutHLLCMS(tokens[1], cmsByteArray, false)
+				return nil, nil
+			} else if strings.Contains(tokens[2], "FIND") {
+				key := strings.Trim(tokens[2], "FIND()")
+				if strings.Compare(key, "inf") == 0 ||
+					strings.Compare(key, "-inf") == 0 ||
+					len(key) == 0 {
+					return errors.New("Invalid key"), nil
+				}
+				cmsByteArray, err := engine.EngineGet("_CMS" + tokens[1])
+				if err == false {
+					return errors.New("CMS with that key doesn't exist"), nil
+				}
+				cms := CountMinSketchFromByteArray(cmsByteArray)
+				count := cms.Find(key)
+				fmt.Println(count)
+				return nil, nil
+
+			} else {
+				return errors.New("Invalid input format"), nil
+			}
+		} else if len(tokens) == 4 {
 			epsilon, err := strconv.ParseFloat(tokens[2], 64)
 			if err != nil {
 				return err, nil
