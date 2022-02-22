@@ -301,7 +301,10 @@ func (engine *Engine) EngineDelete(key string) {
 	engine.cms.Add(key)
 	engine.wal.delete(key)
 	engine.cache.DeleteElement(key)
-	engine.memTable.Delete(key)
+	flush := engine.memTable.Delete(key)
+	if flush {
+		engine.lsm.Run()
+	}
 }
 
 func (engine *Engine) ForceFlush() {

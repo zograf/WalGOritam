@@ -25,11 +25,13 @@ func (mt *Memtable) Get(key string) ([]byte, bool) {
 
 }
 
-func (mt *Memtable) Delete(key string) {
+func (mt *Memtable) Delete(key string) bool {
+	flush := false
 	found := mt.sl.Delete(key)
 	if !found {
-		mt.Set(key, nil, 1)
+		flush = mt.Set(key, nil, 1)
 	}
+	return flush
 }
 
 func (mt *Memtable) Set(key string, val []byte, tombstone byte) bool {
