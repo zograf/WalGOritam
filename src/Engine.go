@@ -205,11 +205,10 @@ func (engine *Engine) EnginePut(key, value string) {
 }
 
 func (engine *Engine) EngineGet(key string) ([]byte, bool) {
-	val, deleted := engine.memTable.Get(key)
-	if !deleted {
+	val, foundMem := engine.memTable.Get(key)
+	if foundMem && val == nil {
 		return nil, false
 	}
-
 	if val != nil {
 		return val, true
 	}

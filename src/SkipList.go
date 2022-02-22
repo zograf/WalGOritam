@@ -175,15 +175,16 @@ func (sl *SkipList) GetVal(key string) ([]byte, bool) {
 			node = node.next[i]
 		}
 	}
-	if node.Tombstone == 0 {
-		if node.Key == key {
+	if node.Key == key {
+		if node.Tombstone == 0 {
 			return node.Value, true
 		} else {
-			return nil, false
+			return nil, true
 		}
 	} else {
 		return nil, false
 	}
+
 }
 
 //we find node with specified key
