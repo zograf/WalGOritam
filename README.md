@@ -1,19 +1,6 @@
-# WAL GO RITAM
-Kao igra reci :D  
-ne a?  
-ok :(
-
 ## About the engine
 
 Walgoritam is a key-value storage engine that features many different advanced programming structures, providing the best user experience while having lightning fast request processing capabilities regardless of the database size.  
-
-## How to use
-
-In the terminal window, you can execute one of the following two lines:  
-
-`go run main.go`  
-
-`go build main.go && ./main`
 
 ### Request options
 
