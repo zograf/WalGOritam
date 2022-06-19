@@ -1,8 +1,8 @@
-## About the engine
+# About the engine
 
 Walgoritam is a key-value storage engine that features many different advanced programming structures, providing the best user experience while having lightning fast request processing capabilities regardless of the database size.  
 
-### Request options
+# Request options
 
 Walgoritam can process the following list of requests:  
 - PUT \<key\> \<value\>  
@@ -13,7 +13,7 @@ Walgoritam can process the following list of requests:
 - PUT_HLL \<key\> \<p_value\> 
 - PUT_CMS \<key\> \<epsilon_value\> \<delta_value\>
 
-### Request descriptions
+# Request descriptions
 
 PUT -> Puts the key-value pair into the engine  
 GET -> Retreives the corresponding value from the engine  
